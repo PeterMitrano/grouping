@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="https://cdn.rawgit.com/konvajs/konva/1.7.6/konva.min.js"></script>
+  <link rel="stylesheet" href="custom.css"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rhythmic Grouping</title>
+</head>
+<body>
+
+<div class="container">
+  <div class="jumbotron">
+    <div class="row">
+      <h3>Instructions:</h3>
+      Place markers where your hear the start of a group.
+    </div>
+    <div class="row">
+      <div id="canvas"></div>
+    </div>
+    <div class="row">
+      <audio controls id="audio">
+        <source src="peter_gtr_01.mp3" id="audio_source" type="audio/mpeg">
+      </audio>
+      <input id="loop_checkbox" type="checkbox" onchange="set_loop();"/>
+      <label for="loop_checkbox">Loop clip</label>
+    </div>
+    <div class="row">
+      <h3>Controls:</h3>
+      <ul>
+        <li>ctrl + click to add new marker</li>
+        <li>click + drag to move the marker</li>
+        <li>shift + click to delete a marker</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</body>
+
+<script src="custom.js"></script>
+
+</html>
