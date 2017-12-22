@@ -1,0 +1,12 @@
+audio {
+    width: 800px;
+}
+
+#interface {
+    background: #fafafa;
+    padding-left: 70px;
+}
+
+.pad-10 {
+    padding: 10px;
+}

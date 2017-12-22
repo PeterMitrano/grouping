@@ -1,8 +1,37 @@
 let audio = document.getElementById('audio');
+let audio_src = document.getElementById('audio_source');
 let canvas = document.getElementById('canvas');
+let sample_title = document.getElementById('sample_title');
+let iface = document.getElementById('interface');
+let sample_idx = 0;
+
+window.onload = function() {
+  sample_idx = 0;
+  audio_src.src = samples[sample_idx];
+  sample_title.innerHTML = 'Sample ' + (sample_idx + 1);
+  audio.load();
+};
 
 function set_loop() {
-  audio.loop = document.getElementById('loop_checkbox').checked;
+  audio.loop = $('#loop_checkbox').checked;
+}
+
+function next_submit() {
+  if (sample_idx === samples.length - 1) {
+    $('#next-submit-button').prop('disabled', true);
+    window.location.href = 'thankyou.html';
+  }
+  else {
+    if (sample_idx === samples.length - 2) {
+      $('#next-submit-button').prop('innerHTML', 'Submit');
+    }
+
+    audio_src.src = samples[sample_idx];
+    audio.load();
+    sample_idx += 1;
+
+    sample_title.innerHTML = 'Sample ' + (sample_idx + 1);
+  }
 }
 
 let width = 800;
@@ -20,7 +49,7 @@ let radius = stage.getWidth() / 80;
 let stroke = 2;
 let line_height = 2;
 let line_begin = 107;
-let line_end = width - 157;
+let line_end = width - 188;
 
 let line = new Konva.Rect({
   x: line_begin,
