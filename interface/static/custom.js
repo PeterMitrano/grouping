@@ -2,7 +2,6 @@ let audio = document.getElementById('audio');
 let audio_src = document.getElementById('audio_source');
 let canvas = document.getElementById('canvas');
 let sample_title = document.getElementById('sample_title');
-let iface = document.getElementById('interface');
 let sample_idx = 0;
 
 window.onload = function() {
@@ -32,6 +31,8 @@ function next_submit() {
 
     sample_title.innerHTML = 'Sample ' + (sample_idx + 1);
   }
+
+  reset_markers();
 }
 
 let width = 800;
@@ -105,6 +106,7 @@ layer.on('click', function(event) {
     if ((x > line_begin) &&
         (x < line_end)) {
       add_marker(x);
+      new_markers.append()
     }
   } else {
     // do nothing on normal click
@@ -115,6 +117,7 @@ background.setZIndex(0);
 line.setZIndex(1);
 add_marker((line_end + line_begin) / 2);
 stage.add(layer);
+let new_markers = [];
 
 function bound(x) {
   return Math.max(line_begin,
@@ -128,4 +131,7 @@ function add_marker(x_pos) {
   });
   layer.add(clone);
   layer.draw();
+}
+
+function reset_markers() {
 }
