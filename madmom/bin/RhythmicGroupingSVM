@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import pickle
+from datetime import datetime
+
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+from sklearn import svm
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+
+    train_subparser = subparsers.add_parser("train")
+    train_subparser.add_argument("train_set", help="npz file with training set")
+    train_subparser.add_argument("model_directory", help="directory to save the model in. it will be named with a date")
+    train_subparser.add_argument("--penalty", "-c", help="Penalty parameter C of the error term.", default=1)
+    train_subparser.add_argument("--kernel", "-k", help="one of [linear, polynomial rbg, sigmoid]", default='linear')
+    train_subparser.add_argument("--degree", "-d", type=float, help="degree [only with polynomial]", default=1)
+    train_subparser.add_argument("--coeff0", "-o", type=float, help="intercept [only with polynomial]", default=0)
+    train_subparser.set_defaults(func=train)
+
+    test_subparser = subparsers.add_parser("test")
+    test_subparser.add_argument("test_set", help="npz file with test set")
+    test_subparser.add_argument("model_file", help="the pickle file of the saved model")
+    test_subparser.set_defaults(func=test)
+
+    model_only_subparser = subparsers.add_parser("model_only")
+    model_only_subparser.add_argument("model_file", help="the pickle file of the saved model")
+    model_only_subparser.set_defaults(func=model_only)
+
+    args = parser.parse_args()
+
+    if args == argparse.Namespace():
+        parser.print_usage()
+    else:
+        args.func(args)
+
+
+def model_only(args):
+    model = pickle.loads(open(args.model_file, 'rb'))
+    print(model.support_vectors_)
+
+
+def train(args):
+    n_frames = 20
+
+    train_set = np.load(args.train_set)
+    x = train_set["x"]
+    labels = train_set["labels"]
+    sample_names = train_set["sample_names"]
+
+    bits = []
+    bit_labels = []
+    for sample, sample_labels in zip(x, labels):
+        # chop up each samples into short segments
+        for idx in range(0, len(sample) - n_frames, 1):
+            bit = sample[idx:idx + n_frames]
+            bits.append(bit.flatten())
+            # the label for each bit is the label for the last frame in the bit
+            bit_labels.append(int(np.ceil(sample_labels[idx + n_frames])))
+
+    model = svm.SVC(C=args.penalty, kernel=args.kernel, degree=args.degree, verbose=True)
+
+    bits = np.array(bits, dtype=np.int)
+    model.fit(bits, bit_labels)
+
+    stamp = "{:%B_%d_%H:%M:%S}".format(datetime.now())
+    model_name = stamp + "_model.pkl"
+    model_full_filename = os.path.join(args.model_directory, model_name)
+    pickle.dump(model, open(model_full_filename, 'wb'))
+
+    # plot(y_hat, fixed_length_labels, sample_names[0], sample_idx=0)
+
+
+def test(args):
+    n_frames = 20
+
+    test_set = np.load(args.test_set)
+    x = test_set["x"]
+    labels = test_set["labels"]
+    sample_names = test_set["sample_names"]
+
+    bits = []
+    bit_labels = []
+    for sample, sample_labels in zip(x, labels):
+        # chop up each samples into short segments
+        for idx in range(0, len(sample) - n_frames, 1):
+            bit = sample[idx:idx + n_frames]
+            bits.append(bit.flatten())
+            # the label for each bit is the label for the last frame in the bit
+            bit_labels.append(int(np.ceil(sample_labels[idx + n_frames])))
+
+    bits = np.array(bits, dtype=np.int)
+    model = pickle.load(open(args.model_file, 'rb'))
+    print("unpickling done")
+    y = model.predict(bits)
+    print(y)
+
+    # plot(y_hat, fixed_length_labels, sample_names[0], sample_idx=0)
+
+
+def plot(y_hat, fixed_length_labels, sample_name, sample_idx):
+    plt.plot(y_hat[sample_idx, :, 0, 0], label="y_hat")
+    plt.plot(fixed_length_labels[sample_idx], label="labels")
+    plt.ylabel("% likelihood of start of group")
+    plt.xlabel("time")
+    plt.title("Test on sample " + sample_name)
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()

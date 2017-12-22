@@ -1,0 +1,47 @@
+# Compiled Python files
+*.pyc
+
+# Python distutil files
+/dist/
+/MANIFEST
+
+# Cython build directory and .c/.so files
+/build/
+*.c
+*.so
+
+# ipython notebook files
+.ipynb_checkpoints
+
+# Python egg
+/madmom.egg-info/
+
+# Vim swap files
+*.swp
+
+# PyDev / Eclipse files
+/.project
+/.pydevproject
+/.settings/
+
+# PyCharm files
+/.idea/
+
+# MacOS files
+.DS_Store
+
+# Sphinx documentation
+/docs/_build/
+
+# Music
+*.wav
+*.mp3
+
+# output
+outputs
+*.beats.txt
+*.npz
+*.npy
+*.zip
+data
+models

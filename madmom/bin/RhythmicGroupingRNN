@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+from datetime import datetime
+
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+
+
+class BiDirectionalRNN:
+    def __init__(self, time_steps, num_samples):
+        num_features = 314
+        self.forwards_x = tf.placeholder(tf.float32, shape=(num_samples, time_steps, num_features), name="forwards_x")
+        self.labels_single = tf.placeholder(tf.float32, shape=(num_samples, time_steps), name="labels")
+        self.labels_compliment = 1 - self.labels_single
+        self.labels = tf.stack((self.labels_single, self.labels_compliment), 2, name="stack")
+
+        self.backwards_x = tf.reverse(self.forwards_x, axis=[1], name="backwards_x")
+
+        self.fwd_imgs = tf.transpose(tf.expand_dims(self.forwards_x, axis=3), perm=[0, 2, 1, 3])
+        tf.summary.image("forwards input", self.fwd_imgs, max_outputs=2)
+        self.bwd_imgs = tf.transpose(tf.expand_dims(self.backwards_x, axis=3), perm=[0, 2, 1, 3])
+        tf.summary.image("backwards input", self.bwd_imgs, max_outputs=2)
+
+        self.x = tf.concat((self.forwards_x, self.backwards_x), axis=2, name="concat")
+
+        self.imgs = tf.transpose(tf.expand_dims(self.x, axis=3), perm=[0, 2, 1, 3])
+        tf.summary.image("concatenated input", self.imgs, max_outputs=2)
+        self.labels_img = tf.expand_dims(tf.expand_dims(self.labels_single, axis=0), axis=3, name='labels_img')
+        tf.summary.image("labels", self.labels_img, max_outputs=10)
+
+        with tf.name_scope("lstm1"):
+            self.num_hidden_1 = 25
+            self.w1 = tf.Variable(tf.truncated_normal([self.num_hidden_1 * 2, 2]), dtype=tf.float32, name="w1")
+            self.w1_steps = tf.reshape(tf.tile(self.w1, [time_steps, 1]), [time_steps, self.num_hidden_1 * 2, 2])
+            self.b1 = tf.Variable(tf.truncated_normal([2]), dtype=tf.float32, name="b1")
+            self.fw_lstm1 = tf.nn.rnn_cell.BasicLSTMCell(self.num_hidden_1, activation=tf.tanh)
+            self.bw_lstm1 = tf.nn.rnn_cell.BasicLSTMCell(self.num_hidden_1, activation=tf.tanh)
+            self.lstm_outputs, self.lstm1_states = tf.nn.bidirectional_dynamic_rnn(self.fw_lstm1, self.bw_lstm1, self.x,
+                                                                                   dtype=tf.float32)
+            self.lstm1 = tf.concat(self.lstm_outputs, 2)
+            self.lstm1_4d = tf.expand_dims(self.lstm1, 2, name="lstm1_4d")
+
+        with tf.name_scope("fc"):
+            self.w1_batch = tf.reshape(tf.tile(self.w1_steps, [num_samples, 1, 1]),
+                                       [num_samples, time_steps, self.num_hidden_1 * 2, 2])
+            self.z1 = tf.matmul(self.lstm1_4d, self.w1_batch, name="matmul1") + self.b1
+
+            tf.summary.histogram(self.w1.name, self.w1)
+
+        with tf.name_scope("softmax"):
+            self.y_hat = tf.nn.softmax(self.z1, name="y_hat")
+
+        self.global_step = tf.Variable(0, trainable=False, name="global_step")
+
+        with tf.name_scope("cross_entropy"):
+            self.loss_raw = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.z1,
+                                                                    name="loss_raw")
+            self.loss_per_sample = tf.reduce_sum(self.loss_raw, name="loss_per_sample", axis=1)
+            self.loss = tf.reduce_mean(self.loss_per_sample, name="loss")
+            tf.summary.scalar("loss", self.loss)
+
+        with tf.name_scope("train"):
+            self.train_step = tf.train.AdamOptimizer(0.001).minimize(self.loss, global_step=self.global_step)
+            trainable_vars = tf.trainable_variables()
+            grads = list(zip(tf.gradients(self.loss, trainable_vars), trainable_vars))
+            for grad, var in grads:
+                tf.summary.histogram(var.name + "/gradient", grad)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+
+    train_subparser = subparsers.add_parser("train")
+    train_subparser.add_argument("dataset", help="dataset (npz file)")
+    train_subparser.add_argument("--log", "-l", action="store_true", help="dataset (npz file)")
+    train_subparser.add_argument("--epocs", "-e", type=int, help="number of epocs to train for", default=100)
+    train_subparser.set_defaults(func=train)
+
+    test_subparser = subparsers.add_parser("test")
+    test_subparser.add_argument("dataset", help="dataset (npz file)")
+    test_subparser.add_argument("checkpoint", help="checkpoint of saved weights (ckpt file)")
+    test_subparser.add_argument("--test-only", "-t", action="store_true", help="just load the existing graph and test")
+    test_subparser.set_defaults(func=test)
+
+    model_only_subparser = subparsers.add_parser("model_only")
+    model_only_subparser.add_argument("--time_steps", type=int, help="number of time steps")
+    model_only_subparser.add_argument("--num_samples", type=int, help="number of audio samples to use (1-15 right now")
+    model_only_subparser.set_defaults(func=model_only)
+
+    args = parser.parse_args()
+
+    if args == argparse.Namespace():
+        parser.print_usage()
+    else:
+        args.func(args)
+
+
+def common(args):
+    dataset = np.load(args.dataset)
+    x = dataset["x"]
+    labels = dataset["labels"]
+    sample_names = dataset["sample_names"]
+
+    summaries = tf.summary.merge_all()
+    sess = tf.Session()
+
+    return sess, x, labels, sample_names, summaries
+
+
+def model_only(args):
+    time_steps = 200
+    num_samples = 14
+    m = BiDirectionalRNN(time_steps, num_samples)
+    print(m.labels_single.get_shape())
+
+
+def train(args):
+    time_steps = 200
+    num_samples = 10
+    summary_frequency = 25
+    m = BiDirectionalRNN(time_steps, num_samples)
+
+    sess, x, labels, sample_names, summaries = common(args)
+
+    saver = tf.train.Saver()
+    if args.log:
+        stamp = "{:%B_%d_%H:%M:%S}".format(datetime.now())
+        log_dir = os.path.join("log_data", stamp)
+        writer = tf.summary.FileWriter(log_dir)
+        writer.add_graph(sess.graph)
+
+    # train
+    init_op = tf.global_variables_initializer()
+    sess.run(init_op)
+
+    try:
+        for j in range(args.epocs):
+            fixed_length_x = x[:num_samples, 0:time_steps, :]
+            fixed_length_labels = labels[:num_samples, 0:time_steps]
+            step, s, loss, y_hat, _ = sess.run([m.global_step, summaries, m.loss, m.y_hat, m.train_step],
+                                               feed_dict={m.forwards_x: fixed_length_x,
+                                                          m.labels_single: fixed_length_labels})
+            if j % summary_frequency == 0:
+                if args.log:
+                    writer.add_summary(s, step)
+
+                print(j, loss)
+
+    except KeyboardInterrupt:
+        pass
+
+    plot(y_hat, fixed_length_labels, sample_names[0], sample_idx=0)
+
+    if args.log:
+        os.environ['TF_LOG_DIR'] = log_dir
+        saver.save(sess, os.path.join(log_dir, "rhythmic_grouping_rnn.ckpt"))
+
+
+def test(args):
+    time_steps = 200
+    num_samples = 15
+
+    sess, x_test, labels_test, sample_names, summaries = common(args)
+
+    m = BiDirectionalRNN(time_steps, num_samples)
+
+    saver = tf.train.Saver()
+    saver.restore(sess, args.checkpoint)
+
+    fixed_length_x = x_test[:num_samples, 0:time_steps, :]
+    fixed_length_labels = labels_test[:num_samples, 0:time_steps]
+    y_hat, loss_per_sample = sess.run([m.y_hat, m.loss_per_sample],
+                           feed_dict={m.forwards_x: fixed_length_x, m.labels_single: fixed_length_labels})
+
+    for test_idx in range(num_samples):
+        print("Test Loss", loss_per_sample[test_idx])
+        plt.figure()
+        plt.plot(y_hat[test_idx, :, 0, 0], label="y_hat")
+        plt.plot(fixed_length_labels[test_idx], label="labels")
+        plt.ylabel("% likelihood of start of group")
+        plt.xlabel("time")
+        plt.title("Test on sample {} ({})".format(test_idx, sample_names[test_idx]))
+
+    plt.show()
+
+
+def plot(y_hat, fixed_length_labels, sample_name, sample_idx):
+    plt.plot(y_hat[sample_idx, :, 0, 0], label="y_hat")
+    plt.plot(fixed_length_labels[sample_idx], label="labels")
+    plt.ylabel("% likelihood of start of group")
+    plt.xlabel("time")
+    plt.title("Test on sample " + sample_name)
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
