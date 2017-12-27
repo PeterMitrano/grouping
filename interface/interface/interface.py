@@ -47,7 +47,7 @@ def init_db():
         sample = os.path.join(samples_path, sample_name)
         if os.path.isfile(sample):
             sample_url = "/static/samples/" + sample_name
-            db.execute('insert into samples (url, title, response_count) values (?, ?, ?)',
+            db.execute('insert into samples (url, title, count) values (?, ?, ?)',
                        [sample_url, sample_name, 0])
     db.commit()
 
@@ -57,7 +57,7 @@ def dump_db():
     init()
 
     db = get_db()
-    cur = db.execute('SELECT url, title, response_count FROM samples ORDER BY response_count ASC')
+    cur = db.execute('SELECT url, title, count FROM samples ORDER BY count ASC')
     entries = cur.fetchall()
 
     # figure out dimensions
@@ -67,18 +67,18 @@ def dump_db():
         title_w = max(len(title), title_w)
 
     header_format = "{:" + str(title_w + 2) + "s}"
-    response_count_header = "Response Count"
-    header = header_format.format("Title") + response_count_header
+    count_header = "Count"
+    header = header_format.format("Title") + count_header
     w = len(header)
-    row_format = "{:" + str(title_w + 2) + "s} {:<" + str(len(response_count_header)) + "d}"
+    row_format = "{:" + str(title_w + 2) + "s} {:<" + str(len(count_header)) + "d}"
 
     print(Fore.GREEN + "Dumping Database" + Style.RESET_ALL)
     print("=" * w)
     print(header)
     for entry in entries:
         title = entry[1]
-        response_count = entry[2]
-        print(row_format.format(title, response_count))
+        count = entry[2]
+        print(row_format.format(title, count))
     print("=" * w)
 
 
@@ -113,7 +113,7 @@ def thankyou():
 @app.route('/', methods=['GET'])
 def index():
     db = get_db()
-    cur = db.execute('SELECT url, title, response_count FROM samples ORDER BY response_count ASC')
+    cur = db.execute('SELECT url, title, count FROM samples ORDER BY count ASC')
     entries = cur.fetchall()
     samples = [{'url': e[0], 'title': e[1]} for e in entries]
     print(samples)
