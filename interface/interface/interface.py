@@ -18,6 +18,7 @@ app.config.update(dict(
 
 # app.config.from_envvar('ENV_SETTINGS', silent=True)
 
+
 @app.cli.command('dumpdb')
 def initdb_command():
     """Initializes the database."""
@@ -28,14 +29,27 @@ def initdb_command():
     db = get_db()
     cur = db.execute('SELECT title, response_count FROM samples ORDER BY response_count ASC')
     entries = cur.fetchall()
+
+    # figure out dimensions
+    title_w = 0
+    for entry in entries:
+        title = entry[0]
+        title_w = max(len(title), title_w)
+
+    header_format = "{:" + str(title_w + 2) + "s}"
+    response_count_header = "Response Count"
+    header = header_format.format("Title") + response_count_header
+    w = len(header)
+    row_format = "{:" + str(title_w + 2) + "s} {:<" + str(len(response_count_header)) + "d}"
+
     print(Fore.GREEN + "Dumping Database" + Style.RESET_ALL)
-    print("=" * 80)
-    print("{:50s} {:<15s}".format("Title", "Response Count"))
+    print("=" * w)
+    print(header)
     for entry in entries:
         title = entry[0]
         response_count = entry[1]
-        print("{:50s} {:<15d}".format(title, response_count))
-    print("=" * 80)
+        print(row_format.format(title, response_count))
+    print("=" * w)
 
 
 @app.cli.command('initdb')
@@ -56,9 +70,11 @@ def init_db():
     samples = ["18_Guitalele.mp3", "peter_gt_01.mp3"]
     prefix_url = 'static/samples/'
     samples = [os.path.join(prefix_url, sample) for sample in samples]
-
-    for sample in samples:
-        db.execute('insert into samples (title, response_count) values (?, ?)', [sample, 0])
+    samples_path = os.path.join(app.root_path, 'static', 'samples')
+    for sample_name in os.listdir(samples_path):
+        sample = os.path.join(samples_path, sample_name)
+        if os.path.isfile(sample):
+            db.execute('insert into samples (title, response_count) values (?, ?)', [sample, 0])
     db.commit()
 
 
