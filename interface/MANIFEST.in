@@ -1,0 +1,3 @@
+graft interface/templates
+graft interface/static
+include interface/schema.sql
