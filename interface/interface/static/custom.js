@@ -6,8 +6,8 @@ let sample_idx = 0;
 
 window.onload = function() {
   sample_idx = 0;
-  audio_src.src = samples[sample_idx];
-  sample_title.innerHTML = 'Sample ' + (sample_idx + 1);
+  audio_src.src = samples[sample_idx]['url'];
+  sample_title.innerHTML = samples[sample_idx]['title'];
   audio.load();
 };
 
@@ -25,11 +25,11 @@ function next_submit() {
       $('#next-submit-button').prop('innerHTML', 'Submit');
     }
 
-    audio_src.src = samples[sample_idx];
+    audio_src.src = samples[sample_idx]['url'];
     audio.load();
     sample_idx += 1;
 
-    sample_title.innerHTML = 'Sample ' + (sample_idx + 1);
+    sample_title.innerHTML = samples[sample_idx]['title'];
   }
 
   reset_markers();

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import random
 from colorama import init, Fore, Style
 from flask import Flask, render_template, url_for, g
 import sqlite3
@@ -20,20 +21,49 @@ app.config.update(dict(
 
 
 @app.cli.command('dumpdb')
+def dumpdb_command():
+    """Dump the database."""
+    dump_db()
+
+
+@app.cli.command('initdb')
 def initdb_command():
     """Initializes the database."""
+    init_db()
+    print('Initialized the database.')
+    dump_db()
 
+
+def init_db():
+    db = get_db()
+
+    # apply the schema
+    with app.open_resource('schema.sql', mode='r') as f:
+        db.cursor().executescript(f.read())
+
+    # insert all the files from the file system
+    samples_path = os.path.join(app.root_path, 'static', 'samples')
+    for sample_name in os.listdir(samples_path):
+        sample = os.path.join(samples_path, sample_name)
+        if os.path.isfile(sample):
+            sample_url = "/static/samples/" + sample_name
+            db.execute('insert into samples (url, title, response_count) values (?, ?, ?)',
+                       [sample_url, sample_name, 0])
+    db.commit()
+
+
+def dump_db():
     # for pretty terminal output
     init()
 
     db = get_db()
-    cur = db.execute('SELECT title, response_count FROM samples ORDER BY response_count ASC')
+    cur = db.execute('SELECT url, title, response_count FROM samples ORDER BY response_count ASC')
     entries = cur.fetchall()
 
     # figure out dimensions
     title_w = 0
     for entry in entries:
-        title = entry[0]
+        title = entry[1]
         title_w = max(len(title), title_w)
 
     header_format = "{:" + str(title_w + 2) + "s}"
@@ -46,36 +76,10 @@ def initdb_command():
     print("=" * w)
     print(header)
     for entry in entries:
-        title = entry[0]
-        response_count = entry[1]
+        title = entry[1]
+        response_count = entry[2]
         print(row_format.format(title, response_count))
     print("=" * w)
-
-
-@app.cli.command('initdb')
-def initdb_command():
-    """Initializes the database."""
-    init_db()
-    print('Initialized the database.')
-
-
-def init_db():
-    db = get_db()
-
-    # apply the schema
-    with app.open_resource('schema.sql', mode='r') as f:
-        db.cursor().executescript(f.read())
-
-    # insert all the files from the file system
-    samples = ["18_Guitalele.mp3", "peter_gt_01.mp3"]
-    prefix_url = 'static/samples/'
-    samples = [os.path.join(prefix_url, sample) for sample in samples]
-    samples_path = os.path.join(app.root_path, 'static', 'samples')
-    for sample_name in os.listdir(samples_path):
-        sample = os.path.join(samples_path, sample_name)
-        if os.path.isfile(sample):
-            db.execute('insert into samples (title, response_count) values (?, ?)', [sample, 0])
-    db.commit()
 
 
 def connect_db():
@@ -109,12 +113,11 @@ def thankyou():
 @app.route('/', methods=['GET'])
 def index():
     db = get_db()
-    cur = db.execute('SELECT title, response_count FROM samples ORDER BY response_count ASC')
+    cur = db.execute('SELECT url, title, response_count FROM samples ORDER BY response_count ASC')
     entries = cur.fetchall()
-    print(entries)
-    samples = [e[0] for e in entries]
-    # return render_template('index.html', samples=json.dumps(samples))
-    return render_template('index.html', samples=json.dumps(["18_Guitalele.mp3", "peter_gt_01.mp3"]))
+    samples = [{'url': e[0], 'title': e[1]} for e in entries]
+    print(samples)
+    return render_template('index.html', samples=json.dumps(samples))
 
 
 if __name__ == '__main__':
