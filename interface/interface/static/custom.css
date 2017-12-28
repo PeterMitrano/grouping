@@ -3,8 +3,20 @@ audio {
 }
 
 #interface {
-    background: #fafafa;
-    padding-left: 70px;
+    background: #eee;
+    text-align: center;
+}
+
+#canvas {
+    display: inline-block;
+}
+
+#canvas {
+    vertical-align: middle;
+}
+
+#loop_label {
+    vertical-align: middle;
 }
 
 .pad-10 {

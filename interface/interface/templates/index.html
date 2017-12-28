@@ -14,46 +14,53 @@
 <body>
 
 <div class="container">
-  <div class="jumbotron">
+  <br>
+  <br>
+  <br>
+  <br>
+  <div class="row">
+    <h3>Instructions:</h3>
+    <p>Place markers where your hear the start of a group.</p>
+  </div>
+  <br>
+  <br>
+  <div id="interface" class="container">
     <div class="row">
-      <h3>Instructions:</h3>
-      Place markers where your hear the start of a group.
+      <h3 id="sample_title"></h3>
     </div>
-    <br>
-    <div id="interface">
-      <div class="row">
-        <h3 id="sample_title"></h3>
-      </div>
-      <div class="row">
-        <div id="canvas"></div>
-      </div>
-      <div class="row">
-        <audio controls id="audio">
-          <source id="audio_source" type="audio/mpeg">
-        </audio>
-        <input id="loop_checkbox" type="checkbox" onchange="set_loop();"/>
-        <label for="loop_checkbox">Loop clip</label>
-      </div>
-    </div>
-    <div class="row">
-      <div class="pull-right pad-10">
-        <button id="next-submit-button" type="button" class="btn btn-primary" onclick="next_submit();">Next</button>
-      </div>
+    <div class="row" id="controls">
+      <button id="pause_play_button" class="btn btn-sm btn-default" onclick="play_pause()">
+        <span class="glyphicon glyphicon-play"></span>
+      </button>
+      <span id="duration" class="pad-10">0:00 / 0:00</span>
+      <div id="canvas"></div>
+      <input id="loop_checkbox" type="checkbox" onchange="set_loop();"/>
+      <label id="loop_label" for="loop_checkbox">Loop clip</label>
     </div>
     <div class="row">
-      <h3>Controls:</h3>
-      <ul>
-        <li>ctrl + click to add new marker</li>
-        <li>click + drag to move the marker</li>
-        <li>shift + click to delete a marker</li>
-      </ul>
+      <audio controls id="audio">
+        <source id="audio_source" type="audio/mpeg">
+      </audio>
     </div>
+  </div>
+  <div class="row">
+    <div class="pull-right pad-10">
+      <button id="next-submit-button" type="button" class="btn btn-primary" onclick="next_submit();">Next</button>
+    </div>
+  </div>
+  <div class="row">
+    <h3>Controls:</h3>
+    <ul>
+      <li>ctrl + click to add new marker</li>
+      <li>click + drag to move the marker</li>
+      <li>shift + click to delete a marker</li>
+    </ul>
   </div>
 </div>
 </body>
 
 <script>
-  let samples = {{samples | safe}};
+  let samples = {{samples|safe}};
 </script>
 <script src="{{url_for('static', filename='custom.js')}}"></script>
 

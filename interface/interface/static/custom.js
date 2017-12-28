@@ -4,38 +4,102 @@ let canvas = document.getElementById('canvas');
 let sample_title = document.getElementById('sample_title');
 let sample_idx = 0;
 
+/////////////////////////////////////////////////////////
+// Setup
+/////////////////////////////////////////////////////////
+
 window.onload = function() {
   sample_idx = 0;
   audio_src.src = samples[sample_idx]['url'];
   sample_title.innerHTML = samples[sample_idx]['title'];
+  sample_idx += 1;
   audio.load();
+  audio.controls = false;
 };
 
-function set_loop() {
-  audio.loop = $('#loop_checkbox').checked;
+/////////////////////////////////////////////////////////
+// Audio Player
+/////////////////////////////////////////////////////////
+
+function play_pause() {
+  if (audio.paused) {
+    audio.play();
+  }
+  else {
+    audio.pause();
+  }
 }
 
+setInterval(function() {
+  // set scrubber position
+  if (audio.duration > 0) {
+    let x = line_begin + audio.currentTime / audio.duration *
+        (line_end - line_begin);
+    scrubber.x(x);
+    layer.draw();
+  }
+}, 30);
+
+function timeFmt(t) {
+  return (t / 60).toFixed(0).padStart(2, '0') + ':' +
+      t.toFixed(0).padStart(2, '0');
+}
+
+audio.addEventListener('durationchange', function() {
+  let now = timeFmt(audio.currentTime);
+  let dur = timeFmt(audio.duration);
+  let duration_string = now + ' / ' + dur;
+  $('#duration').prop('innerHTML', duration_string);
+});
+
+audio.addEventListener('play', function() {
+  let icon = $('#pause_play_button > span');
+  icon.removeClass('glyphicon-play');
+  icon.addClass('glyphicon-pause');
+});
+
+audio.addEventListener('suspend', function() {
+  let icon = $('#pause_play_button > span');
+  icon.addClass('glyphicon-play');
+  icon.removeClass('glyphicon-pause');
+});
+
+audio.addEventListener('pause', function() {
+  let icon = $('#pause_play_button > span');
+  icon.addClass('glyphicon-play');
+  icon.removeClass('glyphicon-pause');
+});
+
+function set_loop() {
+  audio.loop = $('#loop_checkbox').is(':checked');
+}
+
+/////////////////////////////////////////////////////////
+// Konva Canvas
+/////////////////////////////////////////////////////////
+
 function next_submit() {
-  if (sample_idx === samples.length - 1) {
+  if (sample_idx === samples.length) {
     $('#next-submit-button').prop('disabled', true);
     window.location.href = 'thankyou.html';
   }
   else {
-    if (sample_idx === samples.length - 2) {
+    if (sample_idx === samples.length - 1) {
       $('#next-submit-button').prop('innerHTML', 'Submit');
     }
 
+    console.log(samples[sample_idx]);
     audio_src.src = samples[sample_idx]['url'];
-    audio.load();
-    sample_idx += 1;
-
     sample_title.innerHTML = samples[sample_idx]['title'];
+    audio.load();
+
+    sample_idx += 1;
   }
 
   reset_markers();
 }
 
-let width = 800;
+let width = 700;
 let height = 100;
 
 let stage = new Konva.Stage({
@@ -46,11 +110,11 @@ let stage = new Konva.Stage({
 });
 
 let layer = new Konva.Layer();
-let radius = stage.getWidth() / 80;
+let radius = 10;
 let stroke = 2;
 let line_height = 2;
-let line_begin = 107;
-let line_end = width - 188;
+let line_begin = 10;
+let line_end = width - 10;
 
 let line = new Konva.Rect({
   x: line_begin,
@@ -66,9 +130,36 @@ let background = new Konva.Rect({
   y: 0,
   width: stage.getWidth(),
   height: stage.getHeight(),
-  fill: '#fafafa',
+  fill: '#eee',
 });
 layer.add(background);
+
+let scrubber_radius = 10;
+let scrubber = new Konva.Circle({
+  x: line_begin,
+  y: stage.getHeight() / 2,
+  radius: scrubber_radius,
+  fill: '#222',
+  draggable: true,
+  dragBoundFunc: function(pos) {
+    audio.currentTime = ((pos.x - line_begin) / (line_end - line_begin) *
+        audio.duration);
+    return {
+      x: bound(pos.x),
+      y: this.getAbsolutePosition().y,
+    };
+  },
+});
+
+scrubber.on('mouseover', function() {
+  document.body.style.cursor = 'pointer';
+});
+
+scrubber.on('mouseout', function() {
+  document.body.style.cursor = 'default';
+});
+
+layer.add(scrubber);
 
 let marker = new Konva.Circle({
   x: stage.getWidth() / 2,
@@ -89,9 +180,11 @@ let marker = new Konva.Circle({
 marker.on('mouseover', function() {
   document.body.style.cursor = 'pointer';
 });
+
 marker.on('mouseout', function() {
   document.body.style.cursor = 'default';
 });
+
 marker.on('click', function(event) {
   if (event.evt.shiftKey) {
     this.destroy();
@@ -106,7 +199,7 @@ layer.on('click', function(event) {
     if ((x > line_begin) &&
         (x < line_end)) {
       add_marker(x);
-      new_markers.append()
+      new_markers.append();
     }
   } else {
     // do nothing on normal click
