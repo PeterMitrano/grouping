@@ -14,7 +14,6 @@ window.onload = function() {
   sample_title.innerHTML = samples[sample_idx]['title'];
   sample_idx += 1;
   audio.load();
-  audio.controls = false;
 };
 
 /////////////////////////////////////////////////////////
@@ -37,6 +36,7 @@ setInterval(function() {
         (line_end - line_begin);
     scrubber.x(x);
     layer.draw();
+    set_time();
   }
 }, 30);
 
@@ -45,11 +45,15 @@ function timeFmt(t) {
       t.toFixed(0).padStart(2, '0');
 }
 
-audio.addEventListener('durationchange', function() {
+function set_time() {
   let now = timeFmt(audio.currentTime);
   let dur = timeFmt(audio.duration);
   let duration_string = now + ' / ' + dur;
   $('#duration').prop('innerHTML', duration_string);
+}
+
+audio.addEventListener('durationchange', function() {
+  set_time();
 });
 
 audio.addEventListener('play', function() {
@@ -134,7 +138,7 @@ let background = new Konva.Rect({
 });
 layer.add(background);
 
-let scrubber_radius = 10;
+let scrubber_radius = 8;
 let scrubber = new Konva.Circle({
   x: line_begin,
   y: stage.getHeight() / 2,
@@ -199,7 +203,6 @@ layer.on('click', function(event) {
     if ((x > line_begin) &&
         (x < line_end)) {
       add_marker(x);
-      new_markers.append();
     }
   } else {
     // do nothing on normal click
