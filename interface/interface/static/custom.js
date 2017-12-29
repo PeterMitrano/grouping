@@ -3,6 +3,7 @@ let audio_src = document.getElementById('audio_source');
 let canvas = document.getElementById('canvas');
 let sample_title = document.getElementById('sample_title');
 let sample_idx = 0;
+let responses = [];
 
 /////////////////////////////////////////////////////////
 // Setup
@@ -12,7 +13,6 @@ window.onload = function() {
   sample_idx = 0;
   audio_src.src = samples[sample_idx]['url'];
   sample_title.innerHTML = samples[sample_idx]['title'];
-  sample_idx += 1;
   audio.load();
 };
 
@@ -32,13 +32,20 @@ function play_pause() {
 setInterval(function() {
   // set scrubber position
   if (audio.duration > 0) {
-    let x = line_begin + audio.currentTime / audio.duration *
-        (line_end - line_begin);
+    let x = current_time_to_x();
     scrubber.x(x);
     layer.draw();
     set_time();
   }
 }, 30);
+
+function current_time_to_x() {
+  return line_begin + audio.currentTime / audio.duration * (line_end - line_begin);
+}
+
+function x_to_time(x) {
+  return (x - line_begin) / (line_end - line_begin) * audio.duration;
+}
 
 function timeFmt(t) {
   return (t / 60).toFixed(0).padStart(2, '0') + ':' +
@@ -78,30 +85,58 @@ function set_loop() {
   audio.loop = $('#loop_checkbox').is(':checked');
 }
 
-/////////////////////////////////////////////////////////
-// Konva Canvas
-/////////////////////////////////////////////////////////
-
 function next_submit() {
-  if (sample_idx === samples.length) {
+  // save the current responses
+  responses[sample_idx] = [];
+  for (let i = 0; i < markers.length; i++) {
+    responses[sample_idx].push(x_to_time(markers[i].x()));
+  }
+
+  // clear current responses
+  let i = markers.length - 1;
+  for (; i >= 0; i--) {
+    markers[i].destroy();
+    markers.splice(i, 1);
+  }
+  layer.draw();
+
+  if (sample_idx === samples.length - 1) {
     $('#next-submit-button').prop('disabled', true);
-    window.location.href = 'thankyou.html';
+
+    // HTTP POST to server
+    let request = new XMLHttpRequest();
+    let post_data = {
+      'samples': samples,
+      'responses': responses
+    };
+    let url = "/responses";
+    request.open('POST', url, true);
+    request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    request.send(JSON.stringify(post_data));
+
+    // redirect to debriefing page
+    // window.location.href = 'thankyou.html';
   }
   else {
-    if (sample_idx === samples.length - 1) {
-      $('#next-submit-button').prop('innerHTML', 'Submit');
-    }
-
-    console.log(samples[sample_idx]);
+    // load the next sample
+    sample_idx += 1;
     audio_src.src = samples[sample_idx]['url'];
     sample_title.innerHTML = samples[sample_idx]['title'];
     audio.load();
 
-    sample_idx += 1;
-  }
+    // init interface
+    init_interface();
 
-  reset_markers();
+    // change to submit button if it's the last sample
+    if (sample_idx === samples.length - 1) {
+      $('#next-submit-button').prop('innerHTML', 'Submit');
+    }
+  }
 }
+
+/////////////////////////////////////////////////////////
+// Konva Canvas
+/////////////////////////////////////////////////////////
 
 let width = 700;
 let height = 100;
@@ -146,8 +181,7 @@ let scrubber = new Konva.Circle({
   fill: '#222',
   draggable: true,
   dragBoundFunc: function(pos) {
-    audio.currentTime = ((pos.x - line_begin) / (line_end - line_begin) *
-        audio.duration);
+    audio.currentTime = x_to_time(pos.x);
     return {
       x: bound(pos.x),
       y: this.getAbsolutePosition().y,
@@ -193,6 +227,10 @@ marker.on('click', function(event) {
   if (event.evt.shiftKey) {
     this.destroy();
     layer.draw();
+    let idx = markers.indexOf(this);
+    if (idx > -1) {
+      markers.splice(idx, 1);
+    }
   }
 });
 
@@ -200,8 +238,7 @@ layer.on('click', function(event) {
   if (event.evt.ctrlKey) {
     // insert new marker
     let x = stage.getPointerPosition().x;
-    if ((x > line_begin) &&
-        (x < line_end)) {
+    if ((x > line_begin) && (x < line_end)) {
       add_marker(x);
     }
   } else {
@@ -211,13 +248,16 @@ layer.on('click', function(event) {
 
 background.setZIndex(0);
 line.setZIndex(1);
-add_marker((line_end + line_begin) / 2);
+let markers = [];
+init_interface();
 stage.add(layer);
-let new_markers = [];
+
+function init_interface() {
+  add_marker((line_end + line_begin) / 2);
+}
 
 function bound(x) {
-  return Math.max(line_begin,
-      Math.min(line_end, x));
+  return Math.max(line_begin, Math.min(line_end, x));
 }
 
 function add_marker(x_pos) {
@@ -227,7 +267,5 @@ function add_marker(x_pos) {
   });
   layer.add(clone);
   layer.draw();
-}
-
-function reset_markers() {
+  markers.push(clone);
 }
