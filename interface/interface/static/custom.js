@@ -114,7 +114,7 @@ function next_submit() {
     request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     request.send(JSON.stringify(post_data));
 
-    // redirect to debriefing page
+    // FIXME: redirect to debriefing page
     // window.location.href = 'thankyou.html';
   }
   else {
@@ -127,7 +127,7 @@ function next_submit() {
     // init interface
     init_interface();
 
-    // change to submit button if it's the last sample
+    // change next button to submit button if it's the last sample
     if (sample_idx === samples.length - 1) {
       $('#next-submit-button').prop('innerHTML', 'Submit');
     }
