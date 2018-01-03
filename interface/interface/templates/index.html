@@ -3,6 +3,7 @@
 <head>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="https://cdn.rawgit.com/konvajs/konva/1.7.6/konva.min.js"></script>
@@ -24,9 +25,9 @@
   </div>
   <br>
   <br>
-  <div id="interface" class="container">
+  <div id="interface" class="row">
     <div class="row">
-      <h3 id="sample_title"></h3>
+      <h3 id="sample_title" class="pad-10"></h3>
     </div>
     <div class="row" id="controls">
       <button id="pause_play_button" class="btn btn-sm btn-default" onclick="play_pause()">
@@ -42,8 +43,6 @@
         <source id="audio_source" type="audio/mpeg">
       </audio>
     </div>
-  </div>
-  <div class="row">
     <div class="pull-right pad-10">
       <button id="next-submit-button" type="button" class="btn btn-primary" onclick="next_submit();">Next</button>
     </div>

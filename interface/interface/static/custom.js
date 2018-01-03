@@ -4,6 +4,7 @@ let canvas = document.getElementById('canvas');
 let sample_title = document.getElementById('sample_title');
 let sample_idx = 0;
 let responses = [];
+let background_color = '#eee';
 
 /////////////////////////////////////////////////////////
 // Setup
@@ -14,6 +15,9 @@ window.onload = function() {
   audio_src.src = samples[sample_idx]['url'];
   sample_title.innerHTML = samples[sample_idx]['title'];
   audio.load();
+  audio.loop = true;
+  $('#loop_checkbox').prop("checked", true);
+  $('#interface').css('background', background_color);
 };
 
 /////////////////////////////////////////////////////////
@@ -172,7 +176,7 @@ let background = new Konva.Rect({
   y: 0,
   width: stage.getWidth(),
   height: stage.getHeight(),
-  fill: '#eee',
+  fill: background_color,
 });
 layer.add(background);
 

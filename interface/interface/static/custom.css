@@ -1,10 +1,14 @@
+body {
+    font-family: 'Roboto', sans-serif;
+}
+
 audio {
     width: 800px;
 }
 
 #interface {
-    background: #eee;
     text-align: center;
+    border-radius: 8px;
 }
 
 #canvas {
@@ -17,6 +21,10 @@ audio {
 
 #loop_label {
     vertical-align: middle;
+}
+
+.pad-top-10 {
+    padding-top: 10px;
 }
 
 .pad-10 {
