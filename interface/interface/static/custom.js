@@ -86,6 +86,9 @@ function set_loop() {
 }
 
 function next_submit() {
+  // pause the music
+  audio.pause()
+
   // save the current responses
   responses[sample_idx] = [];
   for (let i = 0; i < markers.length; i++) {

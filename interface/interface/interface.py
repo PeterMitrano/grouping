@@ -1,4 +1,6 @@
 import json
+import shutil
+from collections import OrderedDict
 import os
 import sqlite3
 
@@ -108,10 +110,11 @@ def dump_db():
     init()
 
     db = get_db()
-    samples_cur = db.execute('SELECT url, title, count FROM samples ORDER BY count ASC')
-    entries = samples_cur.fetchall()
 
     def print_samples_db():
+        samples_cur = db.execute('SELECT url, title, count FROM samples ORDER BY count ASC')
+        entries = samples_cur.fetchall()
+
         # figure out dimensions
         title_w = 0
         for entry in entries:
@@ -137,14 +140,32 @@ def dump_db():
         responses_cur = db.execute('SELECT * FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
-        fmt = "{:<3s}{:<20s}{:<20s}{:<30s}{:<90s}"
-        header = fmt.format("id", "sample_id", "ip_addr", "stamp", "data")
-        w = len(header)
-        print("=" * w)
+        headers = OrderedDict()
+        headers['id'] = 3
+        headers['sample_title'] = 30
+        headers['ip_addr'] = 20
+        headers['stamp'] = 30
+        term_size = shutil.get_terminal_size((80, 20))
+        total_width = term_size.columns
+        headers['data'] = total_width - sum(headers.values())
+        fmt = ""
+        for k, w in headers.items():
+            fmt += "{:<" + str(w) + "s}"
+        header = fmt.format(*headers.keys())
+        print("=" * total_width)
         print(header)
         for entry in entries:
-            print(fmt.format(*[str(s) for s in entry]))
-        print("=" * w)
+            cols = [str(col) for col in entry]
+            data = "["
+            for d in json.loads(cols[-1]):
+                s = "%0.2f, " % d
+                if len(data + s) > headers['data'] - 4:
+                    data += "..., "
+                    break
+                data += s
+            cols[-1] = data[:-2] + "]"
+            print(fmt.format(*cols))
+        print("=" * total_width)
 
     print_samples_db()
     print_response_db()
