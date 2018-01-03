@@ -15,15 +15,16 @@
 <body>
 
 <div class="container">
-  <br>
-  <br>
-  <br>
+  <div id="title">
+  <h1>Study Interface</h1>
+  </div>
   <br>
   <div class="row">
     <h3>Instructions:</h3>
-    <p>Place markers where your hear the start of a group.</p>
+    <div class="alert alert-warning">
+      Place markers where your hear the start of a group.
+    </div>
   </div>
-  <br>
   <br>
   <div id="interface" class="row">
     <div class="row">
@@ -47,13 +48,15 @@
       <button id="next-submit-button" type="button" class="btn btn-primary" onclick="next_submit();">Next</button>
     </div>
   </div>
-  <div class="row">
+  <div class="row pad-top-10">
     <h3>Controls:</h3>
-    <ul>
-      <li>ctrl + click to add new marker</li>
-      <li>click + drag to move the marker</li>
-      <li>shift + click to delete a marker</li>
-    </ul>
+    <div class="well">
+      <ul>
+        <li>ctrl + click to add new marker</li>
+        <li>click + drag to move the marker</li>
+        <li>shift + click to delete a marker</li>
+      </ul>
+    </div>
   </div>
 </div>
 </body>

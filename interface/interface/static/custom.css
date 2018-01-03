@@ -6,6 +6,11 @@ audio {
     width: 800px;
 }
 
+#title {
+    padding-top: 32;
+    text-align: center;
+}
+
 #interface {
     text-align: center;
     border-radius: 8px;

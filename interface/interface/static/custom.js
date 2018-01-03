@@ -4,7 +4,7 @@ let canvas = document.getElementById('canvas');
 let sample_title = document.getElementById('sample_title');
 let sample_idx = 0;
 let responses = [];
-let background_color = '#eee';
+let background_color = '#D9EDF7';
 
 /////////////////////////////////////////////////////////
 // Setup
@@ -146,7 +146,7 @@ function next_submit() {
 /////////////////////////////////////////////////////////
 
 let width = 700;
-let height = 100;
+let height = 50;
 
 let stage = new Konva.Stage({
   container: 'canvas',
