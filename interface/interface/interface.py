@@ -1,12 +1,14 @@
+import csv
 import json
-import shutil
-from collections import OrderedDict
 import os
+import shutil
 import sqlite3
+from collections import OrderedDict
+from datetime import datetime
 
+import click
 from colorama import init, Fore, Style
 from flask import Flask, render_template, g, request, Response
-from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -20,9 +22,10 @@ app.config.update(dict(
 
 
 @app.cli.command('dumpdb')
-def dumpdb_command():
+@click.option('--responses-csv', help="csv file containing the responses database only", type=click.Path())
+def dumpdb_command(responses_csv):
     """Dump the database."""
-    dump_db()
+    dump_db(responses_csv)
 
 
 @app.cli.command('load')
@@ -31,7 +34,7 @@ def initdb_command():
     success = load()
 
     if success:
-        dump_db()
+        dump_db(False)
 
 
 @app.cli.command('initdb')
@@ -40,7 +43,7 @@ def initdb_command():
     success = init_db()
 
     if success:
-        dump_db()
+        dump_db(False)
 
 
 def connect_db():
@@ -105,11 +108,16 @@ def load():
     return True
 
 
-def dump_db():
+def dump_db(responses_csv_filename):
     # for pretty terminal output
     init()
 
     db = get_db()
+
+    if responses_csv_filename:
+        writer = csv.writer(open(responses_csv_filename, 'w'))
+    else:
+        writer = csv.writer(open(os.devnull, 'w'))
 
     def print_samples_db():
         samples_cur = db.execute('SELECT url, title, count FROM samples ORDER BY count ASC')
@@ -155,6 +163,8 @@ def dump_db():
         print("=" * total_width)
         print(header)
         for entry in entries:
+            responses_list = json.loads(entry[4])
+            writer.writerow([entry[0], entry[1], entry[2], entry[3]] + responses_list)
             cols = [str(col) for col in entry]
             data = "["
             for d in json.loads(cols[-1]):
@@ -169,6 +179,7 @@ def dump_db():
 
     print_samples_db()
     print_response_db()
+
 
 
 @app.teardown_appcontext
