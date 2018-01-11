@@ -155,6 +155,8 @@ function make_interface() {
     Interface.layer = new Konva.Layer();
     let radius = 9;
     let stroke = 2;
+    Interface.marker_small = 6;
+    Interface.marker_large = 9;
     Interface.line_height = 2;
     Interface.line_begin = 10;
     Interface.line_end = width - 10;
@@ -221,13 +223,23 @@ function make_interface() {
           Interface.markers.splice(idx, 1);
         }
       }
+      else if (event.evt.altKey) {
+        if (this.radius() === Interface.marker_small) {
+          this.setRadius(Interface.marker_large);
+          Interface.layer.draw();
+        }
+        else {
+          this.setRadius(Interface.marker_small);
+          Interface.layer.draw();
+        }
+      }
     });
 
     Interface.layer.on('click', function(event) {
       if (event.evt.ctrlKey) {
         // insert new marker
-        let x = stage.getPointerPosition().x;
-        if ((x > line_begin) && (x < line_end)) {
+        let x = Interface.stage.getPointerPosition().x;
+        if ((x > Interface.line_begin) && (x < Interface.line_end)) {
           add_marker(x);
         }
       } else {
