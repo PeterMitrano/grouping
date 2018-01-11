@@ -7,6 +7,7 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="https://cdn.rawgit.com/konvajs/konva/1.7.6/konva.min.js"></script>
+  <script src="{{ url_for('static', filename='mousetrap.min.js') }}"></script>
   <link rel="stylesheet" href="{{url_for('static', filename='custom.css')}}"/>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -23,6 +24,7 @@
     <h3>Instructions:</h3>
     <div class="alert alert-warning">
       Place markers where your hear the start of a group.
+      There will be 500ms of noise at the beginning and end of the clip.
     </div>
   </div>
   <br>
@@ -34,10 +36,7 @@
       <button id="pause_play_button" class="btn btn-sm btn-default" onclick="play_pause()">
         <span class="glyphicon glyphicon-play"></span>
       </button>
-      <span id="duration" class="pad-10">0:00 / 0:00</span>
       <div id="canvas"></div>
-      <input id="loop_checkbox" type="checkbox" onchange="set_loop();"/>
-      <label id="loop_label" for="loop_checkbox">Loop clip</label>
     </div>
     <div class="row">
       <audio id="audio">
@@ -45,6 +44,7 @@
       </audio>
     </div>
     <div class="pull-right pad-10">
+      <button id="scrub-back-button" type="button" class="btn btn-default" onclick="scrub_back();">Back 1 sec</button>
       <button id="next-submit-button" type="button" class="btn btn-primary" onclick="next_submit();">Next</button>
     </div>
   </div>
