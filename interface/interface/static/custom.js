@@ -1,7 +1,6 @@
 let audio = document.getElementById('audio');
 let audio_src = document.getElementById('audio_source');
 let canvas = document.getElementById('canvas');
-let sample_title = document.getElementById('sample_title');
 let sample_idx = 0;
 let responses = [];
 let background_color = '#D9EDF7';
@@ -13,7 +12,6 @@ let background_color = '#D9EDF7';
 window.onload = function() {
   sample_idx = 0;
   audio_src.src = samples[sample_idx]['url'];
-  sample_title.innerHTML = samples[sample_idx]['title'];
   audio.load();
   audio.loop = true;
   $('#interface').css('background', background_color);
@@ -24,8 +22,8 @@ window.onload = function() {
 /////////////////////////////////////////////////////////
 // Keyboard Shortcuts
 /////////////////////////////////////////////////////////
-Mousetrap.bind('b', scrub_back);
-Mousetrap.bind('p', play_pause);
+Mousetrap.bind('s', scrub_back);
+Mousetrap.bind('a', play_pause);
 
 /////////////////////////////////////////////////////////
 // Audio Player
@@ -123,7 +121,6 @@ function next_submit() {
     // load the next sample
     sample_idx += 1;
     audio_src.src = samples[sample_idx]['url'];
-    sample_title.innerHTML = samples[sample_idx]['title'];
     audio.load();
 
     // init interface
@@ -236,7 +233,7 @@ function make_interface() {
     });
 
     Interface.layer.on('click', function(event) {
-      if (event.evt.ctrlKey) {
+      if (event.evt.metaKey) {
         // insert new marker
         let x = Interface.stage.getPointerPosition().x;
         if ((x > Interface.line_begin) && (x < Interface.line_end)) {

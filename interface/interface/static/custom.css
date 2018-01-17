@@ -6,11 +6,6 @@ audio {
     width: 800px;
 }
 
-#title {
-    padding-top: 32;
-    text-align: center;
-}
-
 #interface {
     text-align: center;
     border-radius: 8px;
@@ -26,6 +21,10 @@ audio {
 
 #loop_label {
     vertical-align: middle;
+}
+
+.pad-top-20 {
+    padding-top: 20px;
 }
 
 .pad-top-10 {

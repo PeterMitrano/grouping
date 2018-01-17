@@ -3,7 +3,8 @@
 <head>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+  <!--<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">-->
+  <script src="https://use.fontawesome.com/195da3f5aa.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="https://cdn.rawgit.com/konvajs/konva/1.7.6/konva.min.js"></script>
@@ -16,23 +17,18 @@
 <body>
 
 <div class="container">
-  <div id="title">
-  <h1>Study Interface</h1>
-  </div>
-  <br>
-  <div class="row">
-    <h3>Instructions:</h3>
+  <div id="instructions" class="row pad-top-20">
+    <h3>Instructions</h3>
     <div class="alert alert-warning">
-      Place markers where your hear the start of a group.
-      There will be 500ms of noise at the beginning and end of the clip.
+      <p>Indicate the beginning of a group, which may or may not occur simultaneously with a pitch, dynamic or timbral
+        accent by placing a marker at the start of the group.</p>
+      <p>Repeat these steps for each group that you perceive. When you are satisfied with your response, press the
+        "Next". When you are finished with all five clips, click "Submit"</p>
+      <p>There will be 500ms of noise at the beginning and end of the clip.</p>
     </div>
   </div>
-  <br>
   <div id="interface" class="row">
-    <div class="row">
-      <h3 id="sample_title" class="pad-10"></h3>
-    </div>
-    <div class="row" id="controls">
+    <div class="row pad-top-20" id="controls">
       <button id="pause_play_button" class="btn btn-sm btn-default" onclick="play_pause()">
         <span class="glyphicon glyphicon-play"></span>
       </button>
@@ -44,18 +40,23 @@
       </audio>
     </div>
     <div class="pull-right pad-10">
-      <button id="scrub-back-button" type="button" class="btn btn-default" onclick="scrub_back();">Back 1 sec</button>
+      <!--<button id="scrub-back-button" type="button" class="btn btn-default" onclick="scrub_back();">Back 1 sec</button>-->
       <button id="next-submit-button" type="button" class="btn btn-primary" onclick="next_submit();">Next</button>
     </div>
   </div>
   <div class="row pad-top-10">
-    <h3>Controls:</h3>
+    <h3>Controls</h3>
     <div class="well">
       <ul>
-        <li>ctrl + click to add new marker</li>
+        <li><i class="fa fa-windows"></i> / ⌘ + click to add new marker</li>
         <li>click + drag to move the marker</li>
         <li>shift + click to delete a marker</li>
         <li>alt + click to toggle marker size</li>
+      </ul>
+      Keyboard Commands
+      <ul>
+        <li>A: pause/play</li>
+        <li>S: scrub backwards 1 second</li>
       </ul>
     </div>
   </div>
@@ -64,6 +65,7 @@
 
 <script>
   let samples = {{samples|safe}};
+
 </script>
 <script src="{{url_for('static', filename='custom.js')}}"></script>
 
