@@ -223,7 +223,7 @@ def thank_you():
 
 @app.route('/manage.html', methods=['GET'])
 def manage():
-    return "manage"
+    return render_template('manage.html')
 
 
 @app.route('/', methods=['GET'])

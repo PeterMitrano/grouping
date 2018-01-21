@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="{{url_for('static', filename='custom.css')}}"/>
+  <title>Manage</title>
+</head>
+<body>
+
+<div class="container">
+  <br>
+  <div class="row">
+    <div class="well pad-10">
+      <h3 class="pad-10">Select samples to manage:</h3>
+      <form>
+        <input type="file" id="samples" name="samples" multiple>
+        <input type="submit">
+      </form>
+      <br>
+      Open the files you want to filter, select the checkboxes for the ones you want to keep, then hit download to get
+      the list of checked files.
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-9">
+      <ul  class="list-group" id="input_samples">
+      </ul>
+    </div>
+    <div class="col-md-3">
+      <button id="download" type="button" class="btn btn-primary" onclick="download();">
+        <i class="fa fa-download"></i>
+        Download
+      </button>
+    </div>
+  </div>
+</div>
+</body>
+<script src="{{url_for('static', filename='manage.js')}}"></script>
+</html>
