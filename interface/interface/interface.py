@@ -181,7 +181,6 @@ def dump_db(responses_csv_filename):
     print_response_db()
 
 
-
 @app.teardown_appcontext
 def close_db(error):
     """Closes the database again at the end of the request."""
@@ -220,6 +219,11 @@ def responses():
 @app.route('/thankyou.html', methods=['GET'])
 def thank_you():
     return render_template('thankyou.html')
+
+
+@app.route('/manage.html', methods=['GET'])
+def manage():
+    return "manage"
 
 
 @app.route('/', methods=['GET'])
