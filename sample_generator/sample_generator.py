@@ -12,10 +12,10 @@ def generate_samples_for_file(infile, args):
 
     song = AudioSegment.from_mp3(infile)
 
-    num_samples = int((song.duration_seconds * 1000 / sample_length_ms) * 0.25)  # 0.25 is fairly arbitrary
+    num_samples = int((song.duration_seconds * 1000 / sample_length_ms) * args.sample_percentage)  # 0.25 is fairly arbitrary
     for sample_idx in range(num_samples):
-        start_time = np.random.uniform(0, song.duration_seconds * 500)
-        clip = song[start_time:start_time + sample_length_ms]
+        start_time_ms = np.random.uniform(0, (song.duration_seconds * 1000 - sample_length_ms))
+        clip = song[start_time_ms:start_time_ms + sample_length_ms]
 
         # enveloping and fading. noise is possible but not used in this case
         if args.noise:
@@ -32,16 +32,15 @@ def generate_samples_for_file(infile, args):
         infile_short = os.path.basename(infile)[:8]
         outfile = os.path.join(args.outdir, infile_short + '_' + str(sample_idx) + '.mp3')
         print('exporting ', outfile, '...')
-        clip.export(outfile)
+        clip.export(outfile, tags={'start_time': start_time_ms, 'stop_time'})
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('infiles', help='input files', nargs='*')
+    parser.add_argument('infiles', help='input files (use globbing)', nargs='*')
     parser.add_argument('outdir', help='output directory')
-    parser.add_argument('--workers', '-w', default=4, type=int, help="number of worker process to use")
-    parser.add_argument('--number-of-samples', '-n', type=int, help='number of samples to make from each clip. \
-                                                                     Otherwise, we sample based on the song length')
+    parser.add_argument('--workers', '-w', default=4, type=int, help="number of workers to use")
+    parser.add_argument('--sample-percentage', '-n', type=float, default=0.25, help="percentage of samples")
     parser.add_argument('--noise', action='store_true', help='add noise')
     args = parser.parse_args()
 
