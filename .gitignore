@@ -1,3 +1,5 @@
 .idea
 *.swp
 *.mp3
+__pycache__
+venv
