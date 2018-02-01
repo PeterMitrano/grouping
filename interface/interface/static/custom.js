@@ -2,8 +2,19 @@ let audio = document.getElementById('audio');
 let audio_src = document.getElementById('audio_source');
 let canvas = document.getElementById('canvas');
 let sample_idx = 0;
-let responses = [];
+let edit_histories = [[]];
+let final_responses = [[]];
 let background_color = '#D9EDF7';
+let start_time = 0;
+let marker_id_counter = 0;
+let trial_id = generateID();
+
+function Action(type, id) {
+  return {
+    'type': type,
+    'id': id
+  };
+}
 
 /////////////////////////////////////////////////////////
 // Setup
@@ -15,6 +26,7 @@ window.onload = function() {
   audio.load();
   audio.loop = true;
   $('#interface').css('background', background_color);
+  start_time = new Date().getTime();
 
   make_interface();
 };
@@ -86,13 +98,13 @@ function next_submit() {
   // pause the music
   audio.pause()
 
-  // save the current responses
-  responses[sample_idx] = [];
+  // save the current responses for this sample
+  final_responses[sample_idx] = [];
   for (let i = 0; i < Interface.markers.length; i++) {
-    responses[sample_idx].push(x_to_time(Interface.markers[i].x()));
+    final_responses[sample_idx].push(x_to_time(Interface.markers[i].x()));
   }
 
-  // clear current responses
+  // clear current markers
   let i = Interface.markers.length - 1;
   for (; i >= 0; i--) {
     Interface.markers[i].destroy();
@@ -105,9 +117,16 @@ function next_submit() {
 
     // HTTP POST to server
     let request = new XMLHttpRequest();
+    let finish_time = new Date().getTime();
+    let metadata = {
+      'trial time': (finish_time - start_time) / 1000.0,
+      'tiral-id': trial_id
+    };
     let post_data = {
+      'metadata': metadata,
       'samples': samples,
-      'responses': responses
+      'final_responses': final_responses,
+      'edit_histories': edit_histories
     };
     let url = "/responses";
     request.open('POST', url, true);
@@ -115,13 +134,16 @@ function next_submit() {
     request.send(JSON.stringify(post_data));
 
     // FIXME: redirect to debriefing page
-    // window.location.href = 'thankyou.html';
+    // window.location.href = 'thankyou.html?trial-id=' + trial_id;
   }
   else {
     // load the next sample
     sample_idx += 1;
     audio_src.src = samples[sample_idx]['url'];
     audio.load();
+
+    // create list for edits
+    edit_histories[sample_idx] = [];
 
     // init interface
     init_interface();
@@ -196,11 +218,26 @@ function make_interface() {
       strokeWidth: stroke,
       draggable: true,
       dragBoundFunc: function(pos) {
+        // called every time the object is dragged
+        this.was_dragging = true;
         return {
           x: bound(pos.x),
           y: this.getAbsolutePosition().y,
         };
       },
+    });
+
+    Interface.marker.marker_id = marker_id_counter++;
+
+    Interface.marker.on('mousedown', function() {
+    });
+
+    Interface.marker.on('mouseup', function() {
+        // end of drag
+        if (this.was_dragging) {
+          edit_histories[sample_idx].push(Action("drag", this.marker_id));
+        }
+        this.was_dragging = false;
     });
 
     Interface.marker.on('mouseover', function() {
@@ -213,6 +250,8 @@ function make_interface() {
 
     Interface.marker.on('click', function(event) {
       if (event.evt.shiftKey) {
+        // delete the marker
+        edit_histories[sample_idx].push(Action("delete", this.marker_id));
         this.destroy();
         Interface.layer.draw();
         let idx = Interface.markers.indexOf(this);
@@ -221,6 +260,8 @@ function make_interface() {
         }
       }
       else if (event.evt.altKey) {
+        // resize the marker
+        edit_histories[sample_idx].push(Action("resize", this.marker_id));
         if (this.radius() === Interface.marker_small) {
           this.setRadius(Interface.marker_large);
           Interface.layer.draw();
@@ -237,7 +278,8 @@ function make_interface() {
         // insert new marker
         let x = Interface.stage.getPointerPosition().x;
         if ((x > Interface.line_begin) && (x < Interface.line_end)) {
-          add_marker(x);
+          let new_marker = add_marker(x);
+          edit_histories[sample_idx].push(Action("add", new_marker.marker_id));
         }
       } else {
         // do nothing on normal click
@@ -252,7 +294,8 @@ function make_interface() {
 }
 
 function init_interface() {
-  add_marker((Interface.line_end + Interface.line_begin) / 2);
+// Optional: uncomment to add an initial marker in the center
+//  add_marker((Interface.line_end + Interface.line_begin) / 2);
 }
 
 function bound(x) {
@@ -264,7 +307,26 @@ function add_marker(x_pos) {
     x: x_pos,
     y: Interface.stage.getHeight() / 2,
   });
+  clone.marker_id = marker_id_counter++;
   Interface.layer.add(clone);
   Interface.layer.draw();
   Interface.markers.push(clone);
+  return clone;
+}
+
+function generateID() {
+  let id = getRandomHex();
+  for (let i =0; i < 8; i++) {
+    id += "::";
+    id += getRandomHex();
+  }
+  return id;
+}
+
+function getRandomHex() {
+  hex = Math.floor(Math.random() * (Math.pow(2, 8) + 1)).toString(16);
+  if (hex.length < 2) {
+    hex = "0" + hex;
+  }
+  return hex;
 }

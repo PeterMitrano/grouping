@@ -198,7 +198,8 @@ def responses():
     # FIXME: test this
     # print(ip_addr)
 
-    sample_responses = req_data['responses']
+    print(req_data['metadata'])
+    sample_responses = req_data['final_responses']
     for idx, data in enumerate(sample_responses):
         sample_title = samples[idx]['title']
         sorted_data = sorted(data)
