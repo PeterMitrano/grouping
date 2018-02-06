@@ -174,7 +174,7 @@ def dump_db(outfile_name):
             cols = [str(col) for col in entry]
             data = "["
             for d in response['final_response']:
-                s = "%0.2f, " % d
+                s = "%0.2f, " % d['timestamp']
                 if len(data + s) > headers['data'] - 4:
                     data += "..., "
                     break
@@ -212,6 +212,9 @@ def responses():
     sample_responses = req_data['responses']
     for idx, data in enumerate(sample_responses):
         sample_title = samples[idx]['title']
+        # sort the final response by timestamps for sanity
+        sorted_final_response = sorted(data['final_response'], key=lambda d: d['timestamp'])
+        data['final_response'] = sorted_final_response
         db.execute('INSERT INTO responses (sample_title, ip_addr, stamp, data) VALUES (?, ?, ?, ?)',
                    [sample_title, ip_addr, stamp, json.dumps(data)])
 

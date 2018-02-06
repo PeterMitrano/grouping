@@ -121,7 +121,15 @@ function next_submit() {
 
   // save the current responses for this sample
   for (let i = 0; i < Interface.markers.length; i++) {
-    responses[sample_idx]['final_response'].push(x_to_time(Interface.markers[i].x()));
+    let m = Interface.markers[i];
+    let marker_info = {'timestamp': x_to_time(m.x())};
+    if (m.radius() === Interface.marker_large) {
+      marker_info.size = 'large';
+    }
+    else if (m.radius() === Interface.marker_small) {
+      marker_info.size = 'small';
+    }
+    responses[sample_idx]['final_response'].push(marker_info);
   }
 
   // clear current markers
