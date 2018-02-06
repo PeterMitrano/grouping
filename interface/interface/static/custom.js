@@ -37,7 +37,14 @@ window.onload = function() {
   responses.push(Response());
 
   make_interface();
+
+  $("#interface").hide();
 };
+
+function show_interface() {
+  $("#confirm").hide();
+  $("#interface").show();
+}
 
 /////////////////////////////////////////////////////////
 // Keyboard Shortcuts

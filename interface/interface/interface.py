@@ -1,4 +1,3 @@
-import csv
 import json
 import os
 import shutil
@@ -22,10 +21,10 @@ app.config.update(dict(
 
 
 @app.cli.command('dumpdb')
-@click.option('--responses-csv', help="csv file containing the responses database only", type=click.Path())
-def dumpdb_command(responses_csv):
+@click.option('--outfile', help="name for output file containing the responses database", type=click.Path())
+def dumpdb_command(outfile):
     """Dump the database."""
-    dump_db(responses_csv)
+    dump_db(outfile)
 
 
 @app.cli.command('load')
@@ -108,16 +107,16 @@ def load():
     return True
 
 
-def dump_db(responses_csv_filename):
+def dump_db(outfile_name):
     # for pretty terminal output
     init()
 
     db = get_db()
 
-    if responses_csv_filename:
-        writer = csv.writer(open(responses_csv_filename, 'w'))
+    if outfile_name:
+        outfile = open(outfile_name, 'w')
     else:
-        writer = csv.writer(open(os.devnull, 'w'))
+        outfile = open(os.devnull, 'w')
 
     def print_samples_db():
         samples_cur = db.execute('SELECT url, title, count FROM samples ORDER BY count ASC')
@@ -148,6 +147,8 @@ def dump_db(responses_csv_filename):
         responses_cur = db.execute('SELECT * FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
+        json_out = []
+
         headers = OrderedDict()
         headers['id'] = 3
         headers['sample_title'] = 30
@@ -156,7 +157,6 @@ def dump_db(responses_csv_filename):
         term_size = shutil.get_terminal_size((100, 20))
         total_width = term_size.columns
         headers['data'] = max(total_width - sum(headers.values()), 0)
-        writer.writerow(['id', 'sample_title', 'ip_addr', 'stamp', 'data'])
         fmt = ""
         for k, w in headers.items():
             fmt += "{:<" + str(w) + "s}"
@@ -165,7 +165,12 @@ def dump_db(responses_csv_filename):
         print(header)
         for entry in entries:
             response = json.loads(entry[4])
-            writer.writerow([entry[0], entry[1], entry[2], entry[3], entry[4]])
+            json_out.append({
+                'id': entry[0],
+                'sample_title': entry[1],
+                'ip_addr': entry[2],
+                'stamp': str(entry[3]),
+                'data': json.loads(entry[4])})
             cols = [str(col) for col in entry]
             data = "["
             for d in response['final_response']:
@@ -180,6 +185,8 @@ def dump_db(responses_csv_filename):
                 cols[-1] = data[:-2] + "]"
             print(fmt.format(*cols))
         print("=" * total_width)
+
+        json.dump(json_out, outfile, indent=2)
 
     print_samples_db()
     print_response_db()
