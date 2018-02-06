@@ -2,8 +2,7 @@ let audio = document.getElementById('audio');
 let audio_src = document.getElementById('audio_source');
 let canvas = document.getElementById('canvas');
 let sample_idx = 0;
-let edit_histories = [[]];
-let final_responses = [[]];
+let responses = [];
 let background_color = '#D9EDF7';
 let start_time = 0;
 let marker_id_counter = 0;
@@ -14,6 +13,13 @@ function Action(type, id) {
     'type': type,
     'id': id
   };
+}
+
+function Response() {
+  return {
+    'final_response': [],
+    'edit_history': []
+  }
 }
 
 /////////////////////////////////////////////////////////
@@ -27,6 +33,8 @@ window.onload = function() {
   audio.loop = true;
   $('#interface').css('background', background_color);
   start_time = new Date().getTime();
+
+  responses.push(Response());
 
   make_interface();
 };
@@ -99,9 +107,8 @@ function next_submit() {
   audio.pause()
 
   // save the current responses for this sample
-  final_responses[sample_idx] = [];
   for (let i = 0; i < Interface.markers.length; i++) {
-    final_responses[sample_idx].push(x_to_time(Interface.markers[i].x()));
+    responses[sample_idx]['final_response'].push(x_to_time(Interface.markers[i].x()));
   }
 
   // clear current markers
@@ -119,14 +126,13 @@ function next_submit() {
     let request = new XMLHttpRequest();
     let finish_time = new Date().getTime();
     let metadata = {
-      'trial time': (finish_time - start_time) / 1000.0,
+      // 'trial time': (finish_time - start_time) / 1000.0,
       'tiral-id': trial_id
     };
     let post_data = {
       'metadata': metadata,
       'samples': samples,
-      'final_responses': final_responses,
-      'edit_histories': edit_histories
+      'responses': responses,
     };
     let url = "/responses";
     request.open('POST', url, true);
@@ -142,8 +148,8 @@ function next_submit() {
     audio_src.src = samples[sample_idx]['url'];
     audio.load();
 
-    // create list for edits
-    edit_histories[sample_idx] = [];
+    // create response object for new trial
+    responses[sample_idx] = Response();
 
     // init interface
     init_interface();
@@ -235,7 +241,7 @@ function make_interface() {
     Interface.marker.on('mouseup', function() {
         // end of drag
         if (this.was_dragging) {
-          edit_histories[sample_idx].push(Action("drag", this.marker_id));
+          responses[sample_idx]['edit_history'].push(Action("drag", this.marker_id));
         }
         this.was_dragging = false;
     });
@@ -251,7 +257,7 @@ function make_interface() {
     Interface.marker.on('click', function(event) {
       if (event.evt.shiftKey) {
         // delete the marker
-        edit_histories[sample_idx].push(Action("delete", this.marker_id));
+        responses[sample_idx]['edit_history'].push(Action("delete", this.marker_id));
         this.destroy();
         Interface.layer.draw();
         let idx = Interface.markers.indexOf(this);
@@ -261,7 +267,7 @@ function make_interface() {
       }
       else if (event.evt.altKey) {
         // resize the marker
-        edit_histories[sample_idx].push(Action("resize", this.marker_id));
+        responses[sample_idx]['edit_history'].push(Action("resize", this.marker_id));
         if (this.radius() === Interface.marker_small) {
           this.setRadius(Interface.marker_large);
           Interface.layer.draw();
@@ -279,7 +285,7 @@ function make_interface() {
         let x = Interface.stage.getPointerPosition().x;
         if ((x > Interface.line_begin) && (x < Interface.line_end)) {
           let new_marker = add_marker(x);
-          edit_histories[sample_idx].push(Action("add", new_marker.marker_id));
+          responses[sample_idx]['edit_history'].push(Action("add", this.marker_id));
         }
       } else {
         // do nothing on normal click

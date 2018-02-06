@@ -153,9 +153,9 @@ def dump_db(responses_csv_filename):
         headers['sample_title'] = 30
         headers['ip_addr'] = 20
         headers['stamp'] = 30
-        term_size = shutil.get_terminal_size((80, 20))
+        term_size = shutil.get_terminal_size((100, 20))
         total_width = term_size.columns
-        headers['data'] = total_width - sum(headers.values())
+        headers['data'] = max(total_width - sum(headers.values()), 0)
         fmt = ""
         for k, w in headers.items():
             fmt += "{:<" + str(w) + "s}"
@@ -163,17 +163,20 @@ def dump_db(responses_csv_filename):
         print("=" * total_width)
         print(header)
         for entry in entries:
-            responses_list = json.loads(entry[4])
-            writer.writerow([entry[0], entry[1], entry[2], entry[3]] + responses_list)
+            response = json.loads(entry[4])
+            writer.writerow([entry[0], entry[1], entry[2], entry[3]] + response['final_response'])
             cols = [str(col) for col in entry]
             data = "["
-            for d in json.loads(cols[-1]):
+            for d in response['final_response']:
                 s = "%0.2f, " % d
                 if len(data + s) > headers['data'] - 4:
                     data += "..., "
                     break
                 data += s
-            cols[-1] = data[:-2] + "]"
+            if len(data) == 1:
+                cols[-1] = data + "]"
+            else:
+                cols[-1] = data[:-2] + "]"
             print(fmt.format(*cols))
         print("=" * total_width)
 
@@ -198,13 +201,11 @@ def responses():
     # FIXME: test this
     # print(ip_addr)
 
-    print(req_data['metadata'])
-    sample_responses = req_data['final_responses']
+    sample_responses = req_data['responses']
     for idx, data in enumerate(sample_responses):
         sample_title = samples[idx]['title']
-        sorted_data = sorted(data)
         db.execute('INSERT INTO responses (sample_title, ip_addr, stamp, data) VALUES (?, ?, ?, ?)',
-                   [sample_title, ip_addr, stamp, json.dumps(sorted_data)])
+                   [sample_title, ip_addr, stamp, json.dumps(data)])
 
     for sample in samples:
         db.execute('UPDATE samples SET count = count + 1 WHERE title = ?', [sample['title']])
