@@ -156,6 +156,7 @@ def dump_db(responses_csv_filename):
         term_size = shutil.get_terminal_size((100, 20))
         total_width = term_size.columns
         headers['data'] = max(total_width - sum(headers.values()), 0)
+        writer.writerow(['id', 'sample_title', 'ip_addr', 'stamp', 'data'])
         fmt = ""
         for k, w in headers.items():
             fmt += "{:<" + str(w) + "s}"
@@ -164,7 +165,7 @@ def dump_db(responses_csv_filename):
         print(header)
         for entry in entries:
             response = json.loads(entry[4])
-            writer.writerow([entry[0], entry[1], entry[2], entry[3]] + response['final_response'])
+            writer.writerow([entry[0], entry[1], entry[2], entry[3], entry[4]])
             cols = [str(col) for col in entry]
             data = "["
             for d in response['final_response']:

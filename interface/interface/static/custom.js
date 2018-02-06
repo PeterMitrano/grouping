@@ -285,7 +285,7 @@ function make_interface() {
         let x = Interface.stage.getPointerPosition().x;
         if ((x > Interface.line_begin) && (x < Interface.line_end)) {
           let new_marker = add_marker(x);
-          responses[sample_idx]['edit_history'].push(Action("add", this.marker_id));
+          responses[sample_idx]['edit_history'].push(Action("add", new_marker.marker_id));
         }
       } else {
         // do nothing on normal click
