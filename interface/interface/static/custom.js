@@ -33,14 +33,16 @@ window.onload = function() {
   audio_src.src = samples[sample_idx]['url'];
   audio.load();
   audio.loop = true;
-  $('#interface').css('background', background_color);
+  let iface = $('#interface');
+  iface.css('background', background_color);
   start_time = new Date().getTime();
 
   responses.push(Response());
 
   make_interface();
 
-  $('#interface').hide();
+
+  iface.hide();
 };
 
 function show_interface() {
@@ -94,19 +96,19 @@ function timeFmt(t) {
 }
 
 audio.addEventListener('play', function() {
-  let icon = $('#pause_play_button > span');
+  let icon = $('#pause_play_button').find('> span');
   icon.removeClass('glyphicon-play');
   icon.addClass('glyphicon-pause');
 });
 
 audio.addEventListener('suspend', function() {
-  let icon = $('#pause_play_button > span');
+  let icon = $('#pause_play_button').find('> span');
   icon.addClass('glyphicon-play');
   icon.removeClass('glyphicon-pause');
 });
 
 audio.addEventListener('pause', function() {
-  let icon = $('#pause_play_button > span');
+  let icon = $('#pause_play_button').find('> span');
   icon.addClass('glyphicon-play');
   icon.removeClass('glyphicon-pause');
 });
@@ -356,7 +358,7 @@ function generateID() {
 }
 
 function getRandomHex() {
-  hex = Math.floor(Math.random() * (Math.pow(2, 8) + 1)).toString(16);
+  let hex = Math.floor(Math.random() * (Math.pow(2, 8) + 1)).toString(16);
   if (hex.length < 2) {
     hex = '0' + hex;
   }

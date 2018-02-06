@@ -244,6 +244,9 @@ def index():
     db = get_db()
     cur = db.execute('SELECT title, url, count FROM samples ORDER BY count ASC')
     entries = cur.fetchall()
+    # This is the number to change
+    # make this variable somehow....
+    # could be ~7 clips
     samples_per_participant = 2
     samples = [{'title': e[0], 'url': e[1]} for e in entries[:samples_per_participant]]
     return render_template('index.html', samples=json.dumps(samples))
