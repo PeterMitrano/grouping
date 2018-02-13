@@ -41,7 +41,6 @@ window.onload = function() {
 
   make_interface();
 
-
   iface.hide();
 };
 
@@ -167,7 +166,7 @@ function next_submit() {
     request.send(JSON.stringify(post_data));
 
     // FIXME: redirect to debriefing page
-    // window.location.href = 'thankyou.html?trial-id=' + trial_id;
+    window.location.href = 'thankyou.html?trial-id=' + trial_id;
   }
   else {
 
@@ -253,7 +252,6 @@ function make_interface() {
     draggable: true,
     dragBoundFunc: function(pos) {
       // called every time the object is dragged
-      this.was_dragging = true;
       return {
         x: bound(pos.x),
         y: this.getAbsolutePosition().y,
@@ -263,15 +261,13 @@ function make_interface() {
 
   Interface.marker.marker_id = marker_id_counter++;
 
-  Interface.marker.on('mousedown', function() {
-  });
-
-  Interface.marker.on('mouseup', function() {
-    // end of drag
-    if (this.was_dragging) {
-      responses[sample_idx]['edit_history'].push(Action('drag', this.marker_id));
-    }
-    this.was_dragging = false;
+  Interface.marker.on('dragend', function() {
+    let action = {
+      'type': 'drag',
+      'id': this.marker_id,
+      'to': x_to_time(this.x())
+    };
+    responses[sample_idx]['edit_history'].push(action);
   });
 
   Interface.marker.on('mouseover', function() {
@@ -285,7 +281,11 @@ function make_interface() {
   Interface.marker.on('click', function(event) {
     if (event.evt.shiftKey) {
       // delete the marker
-      responses[sample_idx]['edit_history'].push(Action('delete', this.marker_id));
+      let action = {
+        'type': 'delete',
+        'id': this.marker_id,
+      };
+      responses[sample_idx]['edit_history'].push(action);
       this.destroy();
       Interface.layer.draw();
       let idx = Interface.markers.indexOf(this);
@@ -295,15 +295,21 @@ function make_interface() {
     }
     else if (event.evt.altKey) {
       // resize the marker
-      responses[sample_idx]['edit_history'].push(Action('resize', this.marker_id));
+      let action = {
+        'type': 'resize',
+        'id': this.marker_id,
+      };
       if (this.radius() === Interface.marker_small) {
         this.setRadius(Interface.marker_large);
         Interface.layer.draw();
+        action['size'] = Interface.marker_large;
       }
       else {
         this.setRadius(Interface.marker_small);
+        action['size'] = Interface.marker_small;
         Interface.layer.draw();
       }
+      responses[sample_idx]['edit_history'].push(action);
     }
   });
 
@@ -313,7 +319,12 @@ function make_interface() {
       let x = Interface.stage.getPointerPosition().x;
       if ((x > Interface.line_begin) && (x < Interface.line_end)) {
         let new_marker = add_marker(x);
-        responses[sample_idx]['edit_history'].push(Action('add', new_marker.marker_id));
+        let action = {
+          'type': 'add',
+          'id': new_marker.marker_id,
+          'at': x_to_time(x)
+        };
+        responses[sample_idx]['edit_history'].push(action);
       }
     } else {
       // do nothing on normal click
