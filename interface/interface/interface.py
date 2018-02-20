@@ -23,7 +23,7 @@ app.config.update(dict(
 @app.cli.command('dumpdb')
 @click.option('--outfile', help="name for output file containing the responses database", type=click.Path())
 def dumpdb_command(outfile):
-    """Dump the database."""
+    """ Print the database (can save to CSV) """
     dump_db(outfile)
 
 
