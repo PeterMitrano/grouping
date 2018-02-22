@@ -7,7 +7,7 @@ from datetime import datetime
 
 import click
 from colorama import init, Fore, Style
-from flask import Flask, render_template, g, request, Response
+from flask import Flask, render_template, g, request, Response, url_for, redirect
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -229,18 +229,28 @@ def responses():
     return resp
 
 
-@app.route('/thankyou.html', methods=['GET'])
+@app.route('/survey', methods=['GET'])
+def survey():
+    return render_template('survey.html')
+
+
+@app.route('/thankyou', methods=['GET'])
 def thank_you():
     return render_template('thankyou.html')
 
 
-@app.route('/manage.html', methods=['GET'])
+@app.route('/manage', methods=['GET'])
 def manage():
     return render_template('manage.html')
 
 
 @app.route('/', methods=['GET'])
-def index():
+def root():
+    return redirect(url_for('survey'))
+
+
+@app.route('/interface', methods=['GET'])
+def interface():
     db = get_db()
     cur = db.execute('SELECT title, url, count FROM samples ORDER BY count ASC')
     entries = cur.fetchall()

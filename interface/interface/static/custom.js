@@ -166,7 +166,7 @@ function next_submit() {
     request.send(JSON.stringify(post_data));
 
     // FIXME: redirect to debriefing page
-    window.location.href = 'thankyou.html?trial-id=' + trial_id;
+    window.location.href = 'thankyou?trial-id=' + trial_id;
   }
   else {
 
