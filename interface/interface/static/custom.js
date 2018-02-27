@@ -6,7 +6,6 @@ let responses = [];
 let background_color = '#D9EDF7';
 let start_time = 0;
 let marker_id_counter = 0;
-let trial_id = generateID();
 let trial_start_time;
 
 function Action(type, id) {
@@ -152,8 +151,9 @@ function next_submit() {
     // HTTP POST to server
     let request = new XMLHttpRequest();
     let finish_time = new Date().getTime();
+    id = getTrialID();
     let metadata = {
-      'tiral-id': trial_id,
+      'tiral-id': id,
     };
     let post_data = {
       'metadata': metadata,
@@ -166,7 +166,7 @@ function next_submit() {
     request.send(JSON.stringify(post_data));
 
     // FIXME: redirect to debriefing page
-    window.location.href = 'thankyou?trial-id=' + trial_id;
+    window.location.href = 'thankyou?trial-id=' + id;
   }
   else {
 
@@ -357,21 +357,4 @@ function add_marker(x_pos) {
   Interface.layer.draw();
   Interface.markers.push(clone);
   return clone;
-}
-
-function generateID() {
-  let id = getRandomHex();
-  for (let i = 0; i < 8; i++) {
-    id += '::';
-    id += getRandomHex();
-  }
-  return id;
-}
-
-function getRandomHex() {
-  let hex = Math.floor(Math.random() * (Math.pow(2, 8) + 1)).toString(16);
-  if (hex.length < 2) {
-    hex = '0' + hex;
-  }
-  return hex;
 }

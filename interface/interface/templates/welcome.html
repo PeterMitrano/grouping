@@ -10,28 +10,26 @@
   <title>Rhythmic Grouping</title>
 </head>
 <body>
-
 <div class="container">
   <div class="jumbotron">
     <br>
     <br>
     <br>
-    <h2>Thanks! We've recorded your responses.</h2>
+    <h2>Welcome to the musical grouping study.</h2>
     <br>
     <br>
-    <p> Your unique trial code is:</p>
-    <p id="trial_id" class="code"></p>
-    <p> Please enter this code into MTurk</p>
+    <p>In this task, you will:</p>
+    <ol>
+      <li>Complete a brief survey about your musical background</li>
+      <li>Identify groupings in a few short musical excerpts</li>
+    </ol>
+    <br>
+    <a id="begin_button" class="btn btn-primary">Begin Survey</a>
   </div>
 </div>
 </body>
 <script>
-let id = getTrialID();
-if (id) {
-  document.getElementById('trial_id').innerHTML = id;
-}
-else {
-  document.getElementById('trial_id').innerHTML = 'Something went wrong :(';
-}
+let id = generateTrialID();
+$("#begin_button").attr('href', "survey?trial-id=" + id);
 </script>
 </html>

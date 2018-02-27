@@ -234,6 +234,11 @@ def survey():
     return render_template('survey.html')
 
 
+@app.route('/welcome', methods=['GET'])
+def welcome():
+    return render_template('welcome.html')
+
+
 @app.route('/thankyou', methods=['GET'])
 def thank_you():
     return render_template('thankyou.html')
@@ -246,7 +251,7 @@ def manage():
 
 @app.route('/', methods=['GET'])
 def root():
-    return redirect(url_for('survey'))
+    return redirect(url_for('welcome'))
 
 
 @app.route('/interface', methods=['GET'])
