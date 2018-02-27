@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from pydub import AudioSegment, generators
 from multiprocessing import Pool
 import sys
@@ -12,7 +14,8 @@ def generate_samples_for_file(infile, args):
 
     song = AudioSegment.from_mp3(infile)
 
-    num_samples = int((song.duration_seconds * 1000 / sample_length_ms) * args.sample_percentage)  # 0.25 is fairly arbitrary
+    num_samples = int(
+        (song.duration_seconds * 1000 / sample_length_ms) * args.sample_percentage)  # 0.25 is fairly arbitrary
     for sample_idx in range(num_samples):
         start_time_ms = np.random.uniform(0, (song.duration_seconds * 1000 - sample_length_ms))
         clip = song[start_time_ms:start_time_ms + sample_length_ms]
@@ -32,11 +35,12 @@ def generate_samples_for_file(infile, args):
         infile_short = os.path.basename(infile)[:8]
         outfile = os.path.join(args.outdir, infile_short + '_' + str(sample_idx) + '.mp3')
         print('exporting ', outfile, '...')
-        clip.export(outfile, tags={'start_time': start_time_ms, 'stop_time'})
+        clip.export(outfile, tags={'start_time': start_time_ms, 'stop_time': 0})  # FIXME
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("sample_generator.py",
+                                     epilog="This program generates the samples from a set of MP3 files.")
     parser.add_argument('infiles', help='input files (use globbing)', nargs='*')
     parser.add_argument('outdir', help='output directory')
     parser.add_argument('--workers', '-w', default=4, type=int, help="number of workers to use")
