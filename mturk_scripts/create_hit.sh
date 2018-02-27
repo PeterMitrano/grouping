@@ -1,0 +1,1 @@
+aws mturk create-hit --lifetime-in-seconds=600 --assignment-duration-in-seconds=30 --description='test hit description' --title='test hit' --reward='0.1' --question="`cat question.xml`" --endpoint-url="https://mturk-requester-sandbox.us-east-1.amazonaws.com"
