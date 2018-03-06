@@ -261,8 +261,13 @@ def interface():
     cur = db.execute('SELECT title, url, count FROM samples ORDER BY count ASC')
     entries = cur.fetchall()
     samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    samples = [{'title': e[0], 'url': e[1]} for e in entries[:samples_per_participant]]
-    return render_template('interface.html', samples=json.dumps(samples))
+    if samples_per_participant <= 0 or samples_per_participant > 30:
+        return render_template('error.html', reason='Number of samples per participant must be between 1 and 30')
+    elif len(entries) < samples_per_participant:
+        return render_template('error.html', reason='Not samples available for response.')
+    else:
+        samples = [{'title': e[0], 'url': e[1]} for e in entries[:samples_per_participant]]
+        return render_template('interface.html', samples=json.dumps(samples))
 
 
 if __name__ == '__main__':
