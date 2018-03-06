@@ -8,7 +8,7 @@ function generateTrialID() {
 }
 
 function getRandomHex() {
-  let hex = Math.floor(Math.random() * (Math.pow(2, 8) + 1)).toString(16);
+  let hex = Math.floor(Math.random() * (Math.pow(2, 8) - 1)).toString(16);
   if (hex.length < 2) {
     hex = '0' + hex;
   }

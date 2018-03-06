@@ -36,7 +36,7 @@
   };
   window.setTimeout(function() {
     b.attr('disabled', false);
-    b.attr('href', 'interface?trial-id=' + id);
+    b.attr('href', 'interface?trial-id=' + id + '&samples_per_participant=' + {{samples_per_participant}});
   }, 30000);
 </script>
 </html>

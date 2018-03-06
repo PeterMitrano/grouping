@@ -19,6 +19,7 @@ app.config.update(dict(
     PASSWORD='password'
 ))
 
+DEFAULT_SAMPLES_PER_PARTICIPANT = 10
 
 @app.cli.command('dumpdb')
 @click.option('--outfile', help="name for output file containing the responses database", type=click.Path())
@@ -206,8 +207,6 @@ def responses():
     samples = req_data['samples']
     ip_addr = request.remote_addr
     stamp = datetime.now()
-    # FIXME: test this
-    # print(ip_addr)
 
     sample_responses = req_data['responses']
     for idx, data in enumerate(sample_responses):
@@ -231,12 +230,14 @@ def responses():
 
 @app.route('/survey', methods=['GET'])
 def survey():
-    return render_template('survey.html')
+    samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
+    return render_template('survey.html', samples_per_participant=samples_per_participant)
 
 
 @app.route('/welcome', methods=['GET'])
 def welcome():
-    return render_template('welcome.html')
+    samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
+    return render_template('welcome.html', samples_per_participant=samples_per_participant)
 
 
 @app.route('/thankyou', methods=['GET'])
@@ -259,12 +260,9 @@ def interface():
     db = get_db()
     cur = db.execute('SELECT title, url, count FROM samples ORDER BY count ASC')
     entries = cur.fetchall()
-    # This is the number to change
-    # make this variable somehow....
-    # could be ~7 clips
-    samples_per_participant = 2
+    samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
     samples = [{'title': e[0], 'url': e[1]} for e in entries[:samples_per_participant]]
-    return render_template('index.html', samples=json.dumps(samples))
+    return render_template('interface.html', samples=json.dumps(samples))
 
 
 if __name__ == '__main__':

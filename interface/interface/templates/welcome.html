@@ -21,7 +21,7 @@
     <p>In this task, you will:</p>
     <ol>
       <li>Complete a brief survey about your musical background</li>
-      <li>Identify groupings in a few short musical excerpts</li>
+      <li>Identify groupings in {{samples_per_participant}} short musical excerpts</li>
     </ol>
     <br>
     <a id="begin_button" class="btn btn-primary">Begin Survey</a>
@@ -30,6 +30,6 @@
 </body>
 <script>
 let id = generateTrialID();
-$("#begin_button").attr('href', "survey?trial-id=" + id);
+$("#begin_button").attr('href', "survey?trial-id=" + id + "&samples_per_participant=" + {{samples_per_participant}});
 </script>
 </html>
