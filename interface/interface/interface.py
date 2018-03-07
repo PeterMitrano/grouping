@@ -89,7 +89,7 @@ def load():
     db = get_db()
 
     # insert all the files from the file system
-    samples_index = 'https://users.wpi.edu/~mprlab/grouping/data/samples/index.txt'
+    samples_index = SAMPLES_URL_PREFIX + 'index.html'
     response = requests.get(samples_index)
     sample_names = filter(None, response.text.split("\n"))
     for sample_name in sample_names:
