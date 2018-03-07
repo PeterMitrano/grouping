@@ -6,6 +6,7 @@ from collections import OrderedDict
 from datetime import datetime
 
 import click
+import requests
 from colorama import init, Fore, Style
 from flask import Flask, render_template, g, request, Response, url_for, redirect
 
@@ -20,6 +21,8 @@ app.config.update(dict(
 ))
 
 DEFAULT_SAMPLES_PER_PARTICIPANT = 10
+SAMPLES_URL_PREFIX = 'https://users.wpi.edu/~mprlab/grouping/data/samples/'
+
 
 @app.cli.command('dumpdb')
 @click.option('--outfile', help="name for output file containing the responses database", type=click.Path())
@@ -86,22 +89,22 @@ def load():
     db = get_db()
 
     # insert all the files from the file system
-    samples_path = os.path.join(app.root_path, 'static', 'samples')
-    for idx, sample_title in enumerate(os.listdir(samples_path)):
-        sample = os.path.join(samples_path, sample_title)
-        if os.path.isfile(sample):
-            sample_url = "/static/samples/" + sample_title
-            try:
-                db.execute('INSERT INTO samples (url, title, count) VALUES (?, ?, ?) ',
-                           [sample_url, sample_title, 0])
-                print(Fore.BLUE, end='')
-                print("Added", sample_title)
-                print(Fore.RESET, end='')
-            except sqlite3.IntegrityError:
-                # skip this because the sample already exists!
-                print(Fore.YELLOW, end='')
-                print("Skipped", sample_title)
-                print(Fore.RESET, end='')
+    samples_index = 'https://users.wpi.edu/~mprlab/grouping/data/samples/index.txt'
+    response = requests.get(samples_index)
+    sample_names = filter(None, response.text.split("\n"))
+    for sample_name in sample_names:
+        sample_url = SAMPLES_URL_PREFIX + sample_name
+        try:
+            db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ',
+                       [sample_url, 0])
+            print(Fore.BLUE, end='')
+            print("Added", sample_url)
+            print(Fore.RESET, end='')
+        except sqlite3.IntegrityError:
+            # skip this because the sample already exists!
+            print(Fore.YELLOW, end='')
+            print("Skipped", sample_url)
+            print(Fore.RESET, end='')
 
     db.commit()
 
@@ -120,28 +123,28 @@ def dump_db(outfile_name):
         outfile = open(os.devnull, 'w')
 
     def print_samples_db():
-        samples_cur = db.execute('SELECT url, title, count FROM samples ORDER BY count ASC')
+        samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
         entries = samples_cur.fetchall()
 
         # figure out dimensions
-        title_w = 0
+        url_w = 0
         for entry in entries:
-            title = entry[1]
-            title_w = max(len(title), title_w)
+            url = entry[0]
+            url_w = max(len(url), url_w)
 
-        header_format = "{:" + str(title_w + 2) + "s}"
+        header_format = "{:" + str(url_w + 2) + "s}"
         count_header = "Count"
-        header = header_format.format("Title") + count_header
+        header = header_format.format("URL") + count_header
         w = len(header)
-        row_format = "{:" + str(title_w + 2) + "s} {:<" + str(len(count_header)) + "d}"
+        row_format = "{:" + str(url_w + 2) + "s} {:<" + str(len(count_header)) + "d}"
 
         print(Fore.GREEN + "Dumping Database" + Style.RESET_ALL)
 
         print("=" * w)
         for entry in entries:
-            title = entry[1]
-            count = entry[2]
-            print(row_format.format(title, count))
+            url = entry[0]
+            count = entry[1]
+            print(row_format.format(url, count))
         print("=" * w)
 
     def print_response_db():
@@ -152,15 +155,16 @@ def dump_db(outfile_name):
 
         headers = OrderedDict()
         headers['id'] = 3
-        headers['sample_title'] = 30
-        headers['ip_addr'] = 20
-        headers['stamp'] = 30
+        headers['url'] = 20
+        headers['ip_addr'] = 9
+        headers['stamp'] = 27
         term_size = shutil.get_terminal_size((100, 20))
         total_width = term_size.columns
-        headers['data'] = max(total_width - sum(headers.values()), 0)
+        headers['data'] = max(total_width - sum(headers.values()) - len(headers), 0)
         fmt = ""
         for k, w in headers.items():
-            fmt += "{:<" + str(w) + "s}"
+            fmt += "{:<" + str(w) + "." + str(w) + "s} "
+        fmt = fmt.strip(' ')
         header = fmt.format(*headers.keys())
         print("=" * total_width)
         print(header)
@@ -168,11 +172,12 @@ def dump_db(outfile_name):
             response = json.loads(entry[4])
             json_out.append({
                 'id': entry[0],
-                'sample_title': entry[1],
+                'url': entry[1],
                 'ip_addr': entry[2],
                 'stamp': str(entry[3]),
                 'data': json.loads(entry[4])})
             cols = [str(col) for col in entry]
+            cols[1] = cols[1].strip(SAMPLES_URL_PREFIX)
             data = "["
             for d in response['final_response']:
                 s = "%0.2f, " % d['timestamp']
@@ -210,15 +215,15 @@ def responses():
 
     sample_responses = req_data['responses']
     for idx, data in enumerate(sample_responses):
-        sample_title = samples[idx]['title']
+        url = samples[idx]['url']
         # sort the final response by timestamps for sanity
         sorted_final_response = sorted(data['final_response'], key=lambda d: d['timestamp'])
         data['final_response'] = sorted_final_response
-        db.execute('INSERT INTO responses (sample_title, ip_addr, stamp, data) VALUES (?, ?, ?, ?)',
-                   [sample_title, ip_addr, stamp, json.dumps(data)])
+        db.execute('INSERT INTO responses (url, ip_addr, stamp, data) VALUES (?, ?, ?, ?)',
+                   [url, ip_addr, stamp, json.dumps(data)])
 
     for sample in samples:
-        db.execute('UPDATE samples SET count = count + 1 WHERE title = ?', [sample['title']])
+        db.execute('UPDATE samples SET count = count + 1 WHERE url= ?', [sample['url']])
 
     db.commit()
 
@@ -258,7 +263,7 @@ def root():
 @app.route('/interface', methods=['GET'])
 def interface():
     db = get_db()
-    cur = db.execute('SELECT title, url, count FROM samples ORDER BY count ASC')
+    cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
     entries = cur.fetchall()
     samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
     if samples_per_participant <= 0 or samples_per_participant > 30:
@@ -266,7 +271,7 @@ def interface():
     elif len(entries) < samples_per_participant:
         return render_template('error.html', reason='Not samples available for response.')
     else:
-        samples = [{'title': e[0], 'url': e[1]} for e in entries[:samples_per_participant]]
+        samples = [{'url': e[0]} for e in entries[:samples_per_participant]]
         return render_template('interface.html', samples=json.dumps(samples))
 
 

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-from pydub import AudioSegment, generators
-from multiprocessing import Pool
-import sys
-import os
 import argparse
+import os
+import sys
+import uuid
+
 import numpy as np
+from pydub import AudioSegment, generators
 
 
 def generate_samples_for_file(infile, args):
@@ -14,11 +15,11 @@ def generate_samples_for_file(infile, args):
 
     song = AudioSegment.from_mp3(infile)
 
-    num_samples = int(
-        (song.duration_seconds * 1000 / sample_length_ms) * args.sample_percentage)  # 0.25 is fairly arbitrary
+    song_duration_ms = song.duration_seconds * 1000
+    num_samples = int((song_duration_ms / sample_length_ms) * args.sample_percentage)  # 0.25 is fairly arbitrary
     for sample_idx in range(num_samples):
         start_time_ms = np.random.uniform(0, (song.duration_seconds * 1000 - sample_length_ms))
-        end_time_ms = start_time_ms + sample_length_ms;
+        end_time_ms = start_time_ms + sample_length_ms
         clip = song[start_time_ms:end_time_ms]
 
         # enveloping and fading. noise is possible but not used in this case
@@ -34,9 +35,12 @@ def generate_samples_for_file(infile, args):
 
         # export file
         infile_short = os.path.basename(infile)[:8]
-        outfile = os.path.join(args.outdir, infile_short + '_' + str(sample_idx) + '.mp3')
-        print('exporting ', outfile, '...')
-        exported_file = clip.export(outfile, tags={'start_time': start_time_ms, 'stop_time': end_time_ms})
+        uid = str(uuid.uuid4())
+        outfile = os.path.join(args.outdir, infile_short + '_' + str(sample_idx) + '_' + uid + '.mp3')
+        outfile = outfile.replace(" ", "_")
+        print('exporting:', outfile)
+        metadata = {'start_time': start_time_ms, 'stop_time': end_time_ms, 'song': infile}
+        clip.export(outfile, tags=metadata)
 
 
 def main():
@@ -53,10 +57,8 @@ def main():
         print("[{:s}] is not a directory.".format(args.outdir))
         return
 
-    pool = Pool(processes=args.workers)
-    func_args = [(f, args) for f in args.infiles]
-    result = pool.starmap_async(generate_samples_for_file, func_args)
-    result.wait()
+    for f in args.infiles:
+        generate_samples_for_file(f, args)
 
 
 if __name__ == '__main__':
