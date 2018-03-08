@@ -1,5 +1,7 @@
 import json
 import os
+import urllib
+
 from bs4 import BeautifulSoup
 import shutil
 import sqlite3
@@ -95,17 +97,18 @@ def load():
     sample_names = open(APP_STATIC + "/samples/index.txt").readlines()
     for sample_name in sample_names:
         sample_name = sample_name.strip("\n")
-        sample_url = SAMPLES_URL_PREFIX + sample_name
-        try:
-            db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ', [sample_url, 0])
-            print(Fore.BLUE, end='')
-            print("Added", sample_url)
-            print(Fore.RESET, end='')
-        except sqlite3.IntegrityError:
-            # skip this because the sample already exists!
-            print(Fore.YELLOW, end='')
-            print("Skipped", sample_url)
-            print(Fore.RESET, end='')
+        if sample_name:  # check for empty string
+            sample_url = SAMPLES_URL_PREFIX + sample_name
+            try:
+                db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ', [sample_url, 0])
+                print(Fore.BLUE, end='')
+                print("Added", sample_url)
+                print(Fore.RESET, end='')
+            except sqlite3.IntegrityError:
+                # skip this because the sample already exists!
+                print(Fore.YELLOW, end='')
+                print("Skipped", sample_url)
+                print(Fore.RESET, end='')
 
     db.commit()
 
@@ -149,7 +152,7 @@ def dump_db(outfile_name):
         print("=" * w)
 
     def print_response_db():
-        responses_cur = db.execute('SELECT * FROM responses ORDER BY stamp DESC')
+        responses_cur = db.execute('SELECT id, url, stamp, data FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
         json_out = []
@@ -157,7 +160,6 @@ def dump_db(outfile_name):
         headers = OrderedDict()
         headers['id'] = 3
         headers['url'] = 20
-        headers['ip_addr'] = 9
         headers['stamp'] = 27
         term_size = shutil.get_terminal_size((100, 20))
         total_width = term_size.columns
@@ -170,13 +172,8 @@ def dump_db(outfile_name):
         print("=" * total_width)
         print(header)
         for entry in entries:
-            response = json.loads(entry[4])
-            json_out.append({
-                'id': entry[0],
-                'url': entry[1],
-                'ip_addr': entry[2],
-                'stamp': str(entry[3]),
-                'data': json.loads(entry[4])})
+            response = json.loads(entry[3])
+            json_out.append({'id': entry[0], 'url': entry[1], 'stamp': str(entry[2]), 'data': response})
             cols = [str(col) for col in entry]
             cols[1] = cols[1].strip(SAMPLES_URL_PREFIX)
             data = "["
@@ -213,6 +210,8 @@ def responses():
     samples = req_data['samples']
     ip_addr = request.remote_addr
     stamp = datetime.now()
+    metadata = req_data['metadata']
+    trial_id = req_data['trial_id']
 
     sample_responses = req_data['responses']
     for idx, data in enumerate(sample_responses):
@@ -220,8 +219,8 @@ def responses():
         # sort the final response by timestamps for sanity
         sorted_final_response = sorted(data['final_response'], key=lambda d: d['timestamp'])
         data['final_response'] = sorted_final_response
-        db.execute('INSERT INTO responses (url, ip_addr, stamp, data) VALUES (?, ?, ?, ?)',
-                   [url, ip_addr, stamp, json.dumps(data)])
+        db.execute('INSERT INTO responses (url, ip_addr, stamp, trial_id, metadata, data) VALUES (?, ?, ?, ?, ?, ?)',
+                   [url, ip_addr, stamp, trial_id, json.dumps(metadata), json.dumps(data)])
 
     for sample in samples:
         db.execute('UPDATE samples SET count = count + 1 WHERE url= ?', [sample['url']])
@@ -251,8 +250,45 @@ def thank_you():
     return render_template('thankyou.html')
 
 
+@app.route('/manage', methods=['POST'])
+def manage_post():
+    req_data = request.get_json()
+    selected_samples = req_data['selected_samples']
+    unselected_samples = req_data['unselected_samples']
+    # set database contents to these selected samples
+    additions = []
+    skipped_additions = []
+    removals = []
+    skipped_removals = []
+    db = get_db()
+
+    # Add samples (skip duplicates)
+    for sample_url in selected_samples:
+        try:
+            db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ', [sample_url, 0])
+            additions.append(sample_url)
+        except sqlite3.IntegrityError:
+            # skip this because the sample already exists!
+            skipped_additions.append(sample_url)
+
+    # Remove samples
+    for sample_url in unselected_samples:
+        try:
+            db.execute('DELETE FROM samples WHERE url= ? AND count= 0 ', [sample_url])
+            removals.append(sample_url)
+        except sqlite3.IntegrityError:
+            skipped_removals.append(sample_url)
+
+    db.commit()
+    return json.dumps({'status': 'success',
+                       'additions': additions,
+                       'skipped_additions': skipped_additions,
+                       'removals': removals,
+                       'skipped_removals': skipped_removals})
+
+
 @app.route('/manage', methods=['GET'])
-def manage():
+def manage_get():
     """ This web page will list all the files currently available on the CCC server where we store our samples.
     You can also view the files by going to https://users.wpi.edu/~mprlab/grouping/data/samples.
     You can listen to all the samples and check which ones you want in the study, and then downloads the index.txt file.
@@ -264,6 +300,7 @@ def manage():
     samples = []
     for link in sample_links:
         sample_name = link.get('href')
+        sample_name = urllib.parse.unquote(sample_name)
         if 'mp3' in sample_name:
             sample = {
                 'url': SAMPLES_URL_PREFIX + sample_name,
@@ -277,7 +314,7 @@ def manage():
     db_samples = []
     for entry in entries:
         db_samples.append({
-            'url': str(entry[0]).strip(SAMPLES_URL_PREFIX),
+            'url': entry[0],
             'count': int(entry[1])
         })
 

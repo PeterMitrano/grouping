@@ -20,7 +20,7 @@ function getTrialID() {
   if (params.has('trial-id')) {
     return params.get('trial-id');
   }
-  return undefined;
+  return "No Trial ID";
 }
 
 function copyToClipboard(element) {

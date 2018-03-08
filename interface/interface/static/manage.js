@@ -1,23 +1,18 @@
+let sample_map = {};
+
 window.onload = function() {
     for (let i=0; i < samples.length; ++i) {
-        sample = samples[i]
+        let sample = samples[i];
         add_sample(sample['url'], sample['name']);
     }
 
+    // check all the samples that are already in the database
     for (let i=0; i < db_samples.length; ++i) {
-        db_sample = db_samples[i]
-        add_db_sample(db_sample['url'], db_sample['count']);
+        let db_sample = db_samples[i];
+        let list_element = sample_map[db_sample['url']];
+        let checkbox = $(list_element.getElementsByTagName("input"));
+        checkbox.prop("checked", true);
     }
-}
-
-let output_samples = [];
-
-function add_db_sample(url, count) {
-    let new_db_sample_item = document.createElement("li");
-    new_db_sample_item.className = "list-group-item";
-    let text = document.createTextNode(url + "......." + count);
-    new_db_sample_item.appendChild(text);
-    $("#db_samples").append(new_db_sample_item);
 }
 
 function add_sample(url, name) {
@@ -29,14 +24,6 @@ function add_sample(url, name) {
     new_audio.setAttribute("style", "width:90%");
     checkbox.type="checkbox";
     checkbox.setAttribute("style", "margin-left:30px");
-    checkbox.onchange = function() {
-        if (this.checked) {
-            output_samples.push(name);
-        }
-        else {
-            output_samples.pop(name);
-        }
-    };
     new_src.type = "audio/mpeg";
     new_src.src = url;
     new_audio.controls = true;
@@ -44,22 +31,40 @@ function add_sample(url, name) {
     new_audio.appendChild(new_src);
     new_audio_item.className = "list-group-item";
     new_audio_item.appendChild(text);
-    new_audio_item.appendChild(new_audio);
     new_audio_item.appendChild(checkbox);
+    new_audio_item.appendChild(new_audio);
     $("#input_samples").append(new_audio_item);
+    sample_map[url] = new_audio_item
 }
 
-function download() {
-    text = output_samples.join("\n") + "\n";
+function update() {
+    // send a request to the app asking to add or remove various files
+    let selected_samples = [];
+    let unselected_samples = [];
 
-    let element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    element.setAttribute('download', "index.txt");
+    for (let i=0; i < samples.length; ++i) {
+        let sample = samples[i];
+        let list_element = sample_map[sample['url']];
+        let checkbox = $(list_element.getElementsByTagName("input"));
+        if (checkbox.prop("checked")) {
+            selected_samples.push(sample['url']);
+        } else {
+            unselected_samples.push(sample['url']);
+        }
+    }
 
-    element.style.display = 'none';
-    document.body.appendChild(element);
+    let post_data = {
+        'selected_samples': selected_samples,
+        'unselected_samples': unselected_samples
+    };
+    let url = '/manage';
+    let request = new XMLHttpRequest();
+    request.open('POST', url, true);
+    request.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    request.send(JSON.stringify(post_data));
 
-    element.click();
-
-    document.body.removeChild(element);
+    // refresh the page once the request has finished
+    request.onreadystatechange = function() {
+        location.reload();
+    }
 }

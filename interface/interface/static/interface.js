@@ -154,10 +154,10 @@ function next_submit() {
     let finish_time = new Date().getTime();
     id = getTrialID();
     let metadata = {
-      'tiral-id': id,
     };
     let post_data = {
       'metadata': metadata,
+      'trial_id': id,
       'samples': samples,
       'responses': responses,
     };

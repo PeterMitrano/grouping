@@ -47,6 +47,14 @@ audio {
     padding-top: 10px;
 }
 
+.pad-20 {
+    padding: 20px;
+}
+
+.navbar-fixed-bottom {
+    background-color: #cccc;
+}
+
 .pad-10 {
     padding: 10px;
 }
