@@ -2,7 +2,7 @@
 drop table if exists samples;
 create table samples (
 --  id integer primary key autoincrement,
-  url text not null,
+  url text not null primary key,
   count integer not null
 );
 

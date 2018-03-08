@@ -6,7 +6,6 @@ from collections import OrderedDict
 from datetime import datetime
 
 import click
-import requests
 from colorama import init, Fore, Style
 from flask import Flask, render_template, g, request, Response, url_for, redirect
 
@@ -22,6 +21,8 @@ app.config.update(dict(
 
 DEFAULT_SAMPLES_PER_PARTICIPANT = 10
 SAMPLES_URL_PREFIX = 'https://users.wpi.edu/~mprlab/grouping/data/samples/'
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
+APP_STATIC = os.path.join(APP_ROOT, 'static')
 
 
 @app.cli.command('dumpdb')
@@ -89,7 +90,7 @@ def load():
     db = get_db()
 
     # insert all the files from the file system
-    sample_names = open("static/samples/index.txt").readlines()
+    sample_names = open(APP_STATIC + "/samples/index.txt").readlines()
     for sample_name in sample_names:
         sample_name = sample_name.strip("\n")
         sample_url = SAMPLES_URL_PREFIX + sample_name
