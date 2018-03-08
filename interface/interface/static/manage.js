@@ -68,3 +68,27 @@ function update() {
         location.reload();
     }
 }
+
+function download() {
+    let text = "";
+
+    for (let i=0; i < samples.length; ++i) {
+        let sample = samples[i];
+        let list_element = sample_map[sample['url']];
+        let checkbox = $(list_element.getElementsByTagName("input"));
+        if (checkbox.prop("checked")) {
+            text += sample['url'] + "\n";
+        }
+    }
+
+    let element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', "index.txt");
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
