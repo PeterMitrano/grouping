@@ -3,19 +3,21 @@ window.onload = function() {
         sample = samples[i]
         add_sample(sample['url'], sample['name']);
     }
+
+    for (let i=0; i < db_samples.length; ++i) {
+        db_sample = db_samples[i]
+        add_db_sample(db_sample['url'], db_sample['count']);
+    }
 }
 
 let output_samples = [];
 
-function add_samples(e) {
-    if (!e.target.files) {
-        return;
-    }
-
-    let files = e.target.files
-    for (let i = 0; i < files.length; ++i) {
-        add_sample(files[i].name);
-    }
+function add_db_sample(url, count) {
+    let new_db_sample_item = document.createElement("li");
+    new_db_sample_item.className = "list-group-item";
+    let text = document.createTextNode(url + "......." + count);
+    new_db_sample_item.appendChild(text);
+    $("#db_samples").append(new_db_sample_item);
 }
 
 function add_sample(url, name) {

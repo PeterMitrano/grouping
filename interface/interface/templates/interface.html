@@ -4,7 +4,7 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
-  <link rel="stylesheet" href="{{url_for('static', filename='custom.css')}}"/>
+  <link rel="stylesheet" href="{{url_for('static', filename='common.css')}}"/>
   <script src="https://use.fontawesome.com/195da3f5aa.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -48,11 +48,11 @@
         <source id="audio_source" type="audio/mpeg">
       </audio>
     </div>
-    <div class="pull-right pad-10">
+    <div class="pull-right">
       <button id="next-submit-button" type="button" class="btn btn-primary" onclick="next_submit();">Next</button>
     </div>
   </div>
-  <div class="row pad-top-10">
+  <div id="controls" class="row pad-top-10">
     <h3>Controls</h3>
     <div class="well">
       <ul>
@@ -64,7 +64,8 @@
       Keyboard Commands
       <ul>
         <li>A: pause/play</li>
-        <li>S: scrub backwards 1 second</li>
+        <li>S: place grouping marker at the scrub head</li>
+        <li>D: scrub backwards 1 second</li>
       </ul>
     </div>
   </div>
@@ -74,6 +75,6 @@
 <script>
   let samples = {{samples|safe}};
 </script>
-<script src="{{url_for('static', filename='custom.js')}}"></script>
+<script src="{{url_for('static', filename='interface.js')}}"></script>
 
 </html>

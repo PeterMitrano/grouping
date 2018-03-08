@@ -270,7 +270,18 @@ def manage():
                 'name': sample_name
             }
             samples.append(sample)
-    return render_template('manage.html', samples=json.dumps(samples))
+
+    db = get_db()
+    samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
+    entries = samples_cur.fetchall()
+    db_samples = []
+    for entry in entries:
+        db_samples.append({
+            'url': str(entry[0]).strip(SAMPLES_URL_PREFIX),
+            'count': int(entry[1])
+        })
+
+    return render_template('manage.html', samples=json.dumps(samples), db_samples=db_samples)
 
 
 @app.route('/', methods=['GET'])

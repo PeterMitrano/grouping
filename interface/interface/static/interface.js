@@ -54,8 +54,9 @@ function show_interface() {
 /////////////////////////////////////////////////////////
 // Keyboard Shortcuts
 /////////////////////////////////////////////////////////
-Mousetrap.bind('s', scrub_back);
 Mousetrap.bind('a', play_pause);
+Mousetrap.bind('s', add_marker_at_scrubber);
+Mousetrap.bind('d', scrub_back);
 
 /////////////////////////////////////////////////////////
 // Audio Player
@@ -345,6 +346,10 @@ function init_interface() {
 
 function bound(x) {
   return Math.max(Interface.line_begin, Math.min(Interface.line_end, x));
+}
+
+function add_marker_at_scrubber() {
+    add_marker(current_time_to_x());
 }
 
 function add_marker(x_pos) {

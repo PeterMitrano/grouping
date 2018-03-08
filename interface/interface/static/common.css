@@ -19,8 +19,24 @@ audio {
     vertical-align: middle;
 }
 
+#next-submit-button {
+    margin: 60px 10px 10px 10px;
+}
+
+#instructions {
+    font-size: 12pt;
+}
+
+#controls {
+    font-size: 12pt;
+}
+
 #loop_label {
     vertical-align: middle;
+}
+
+.pad-top-80 {
+    padding-top: 80px;
 }
 
 .pad-top-20 {
