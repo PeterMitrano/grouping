@@ -11,13 +11,11 @@ Now you're in an isolated python environment. Now install the dependencies
 
     pip install -r requirements.txt
 
-Before we run the webapp we need to create a directory of our samples and initialize our database
+Before we run the webapp we need to list which samples we want in our database. Open the following file in a text editor:
 
-    cd interface/interface/static/
-    mkdir samples
+    interface/interface/static/samples/index.txt
 
-You can put all the samples you want people to get in there. However, they won't actually be presented to users until we register them in our database.
-First, go the the `rhythmic_grouping/interface` folder.
+You can pick any file that's in the directory https://users.wpi.edu/~mprlab/grouping/data/samples
 
   export FLASK_APP=interface/interface.py
   flask initdb
