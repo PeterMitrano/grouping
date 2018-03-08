@@ -77,7 +77,7 @@ function download() {
         let list_element = sample_map[sample['url']];
         let checkbox = $(list_element.getElementsByTagName("input"));
         if (checkbox.prop("checked")) {
-            text += sample['url'] + "\n";
+            text += sample['name'] + "\n";
         }
     }
 
