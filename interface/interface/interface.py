@@ -89,14 +89,12 @@ def load():
     db = get_db()
 
     # insert all the files from the file system
-    samples_index = SAMPLES_URL_PREFIX + 'index.html'
-    response = requests.get(samples_index)
-    sample_names = filter(None, response.text.split("\n"))
+    sample_names = open("static/samples/index.txt").readlines()
     for sample_name in sample_names:
+        sample_name = sample_name.strip("\n")
         sample_url = SAMPLES_URL_PREFIX + sample_name
         try:
-            db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ',
-                       [sample_url, 0])
+            db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ', [sample_url, 0])
             print(Fore.BLUE, end='')
             print("Added", sample_url)
             print(Fore.RESET, end='')
@@ -127,22 +125,22 @@ def dump_db(outfile_name):
         entries = samples_cur.fetchall()
 
         # figure out dimensions
-        url_w = 0
-        for entry in entries:
-            url = entry[0]
-            url_w = max(len(url), url_w)
+        url_w = "30"
+        count_w = "5"
 
-        header_format = "{:" + str(url_w + 2) + "s}"
-        count_header = "Count"
-        header = header_format.format("URL") + count_header
+        header_format = "{:<" + url_w + "." + url_w + "s} {:s}"
+        header = header_format.format("URL", "count")
         w = len(header)
-        row_format = "{:" + str(url_w + 2) + "s} {:<" + str(len(count_header)) + "d}"
+        row_format = "{:<" + url_w + "." + url_w + "s} {:<" + count_w + "d}"
 
         print(Fore.GREEN + "Dumping Database" + Style.RESET_ALL)
 
         print("=" * w)
+        print(header)
+        print("=" * w)
         for entry in entries:
             url = entry[0]
+            url = url.strip(SAMPLES_URL_PREFIX)
             count = entry[1]
             print(row_format.format(url, count))
         print("=" * w)
