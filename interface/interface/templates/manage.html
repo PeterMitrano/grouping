@@ -15,14 +15,11 @@
   <br>
   <div class="row">
     <div class="well pad-10">
-      <h3 class="pad-10">Select samples to manage:</h3>
-      <form>
-        <input type="file" id="samples" name="samples" multiple>
-        <input type="submit">
-      </form>
+      <h3 class="pad-10">Select samples you want to use in the study:</h3>
       <br>
       Open the files you want to filter, select the checkboxes for the ones you want to keep, then hit download to get
-      the list of checked files.
+      the list of checked files. This file then gets put at static/samples/index.txt, and you must run `flask load`
+      to refresh the list of files in the database.
     </div>
   </div>
   <div class="row">
@@ -40,4 +37,7 @@
 </div>
 </body>
 <script src="{{url_for('static', filename='manage.js')}}"></script>
+<script>
+  samples = {{samples|safe}}
+</script>
 </html>

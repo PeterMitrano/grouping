@@ -1,11 +1,13 @@
 import json
 import os
+from bs4 import BeautifulSoup
 import shutil
 import sqlite3
 from collections import OrderedDict
 from datetime import datetime
 
 import click
+import requests
 from colorama import init, Fore, Style
 from flask import Flask, render_template, g, request, Response, url_for, redirect
 
@@ -21,7 +23,7 @@ app.config.update(dict(
 
 DEFAULT_SAMPLES_PER_PARTICIPANT = 10
 SAMPLES_URL_PREFIX = 'https://users.wpi.edu/~mprlab/grouping/data/samples/'
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))  # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
 
 
@@ -251,7 +253,24 @@ def thank_you():
 
 @app.route('/manage', methods=['GET'])
 def manage():
-    return render_template('manage.html')
+    """ This web page will list all the files currently available on the CCC server where we store our samples.
+    You can also view the files by going to https://users.wpi.edu/~mprlab/grouping/data/samples.
+    You can listen to all the samples and check which ones you want in the study, and then downloads the index.txt file.
+    This file will contain all the sample names you've selected """
+    # get list of possible samples from CCC
+    r = requests.get(SAMPLES_URL_PREFIX)
+    soup = BeautifulSoup(r.text, 'html.parser')
+    sample_links = soup.find_all('a')
+    samples = []
+    for link in sample_links:
+        sample_name = link.get('href')
+        if 'mp3' in sample_name:
+            sample = {
+                'url': SAMPLES_URL_PREFIX + sample_name,
+                'name': sample_name
+            }
+            samples.append(sample)
+    return render_template('manage.html', samples=json.dumps(samples))
 
 
 @app.route('/', methods=['GET'])
