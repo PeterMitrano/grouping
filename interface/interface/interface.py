@@ -289,36 +289,36 @@ def manage_post():
 
 @app.route('/manage', methods=['GET'])
 def manage_get():
-    """ This web page will list all the files currently available on the CCC server where we store our samples.
-    You can also view the files by going to https://users.wpi.edu/~mprlab/grouping/data/samples.
-    You can listen to all the samples and check which ones you want in the study, and then downloads the index.txt file.
-    This file will contain all the sample names you've selected """
     # get list of possible samples from CCC
-    r = requests.get(SAMPLES_URL_PREFIX)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    sample_links = soup.find_all('a')
-    samples = []
-    for link in sample_links:
-        sample_name = link.get('href')
-        sample_name = urllib.parse.unquote(sample_name)
-        if 'mp3' in sample_name:
-            sample = {
-                'url': SAMPLES_URL_PREFIX + sample_name,
-                'name': sample_name
-            }
-            samples.append(sample)
+    try:
+        r = requests.get(SAMPLES_URL_PREFIX)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        sample_links = soup.find_all('a')
+        samples = []
+        for link in sample_links:
+            sample_name = link.get('href')
+            sample_name = urllib.parse.unquote(sample_name)
+            if 'mp3' in sample_name:
+                sample = {
+                    'url': SAMPLES_URL_PREFIX + sample_name,
+                    'name': sample_name
+                }
+                samples.append(sample)
 
-    db = get_db()
-    samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
-    entries = samples_cur.fetchall()
-    db_samples = []
-    for entry in entries:
-        db_samples.append({
-            'url': entry[0],
-            'count': int(entry[1])
-        })
+        db = get_db()
+        samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
+        entries = samples_cur.fetchall()
+        db_samples = []
+        for entry in entries:
+            db_samples.append({
+                'url': entry[0],
+                'count': int(entry[1])
+            })
 
-    return render_template('manage.html', samples=json.dumps(samples), db_samples=db_samples)
+        return render_template('manage.html', samples=json.dumps(samples), db_samples=db_samples)
+    except requests.exceptions.ProxyError:
+        return render_template('error.html', reason="Failed to contact CCC for list of samples. \
+                                                     You can't use /manage on the pythonanywhere hosted website")
 
 
 @app.route('/', methods=['GET'])
