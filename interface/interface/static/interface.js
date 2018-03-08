@@ -349,7 +349,14 @@ function bound(x) {
 }
 
 function add_marker_at_scrubber() {
-    add_marker(current_time_to_x());
+    let new_marker = add_marker(current_time_to_x());
+    let action = {
+      'type': 'add',
+      'id': new_marker.marker_id,
+      'at': x_to_time(new_marker.x())
+    };
+    console.log(new_marker.x());
+    responses[sample_idx]['edit_history'].push(action);
 }
 
 function add_marker(x_pos) {
