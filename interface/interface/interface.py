@@ -152,7 +152,7 @@ def dump_db(outfile_name):
         print("=" * w)
 
     def print_response_db():
-        responses_cur = db.execute('SELECT id, url, stamp, data FROM responses ORDER BY stamp DESC')
+        responses_cur = db.execute('SELECT id, url, stamp, trial_id, data FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
         json_out = []
@@ -161,6 +161,7 @@ def dump_db(outfile_name):
         headers['id'] = 3
         headers['url'] = 20
         headers['stamp'] = 27
+        headers['trial_id'] = 13
         term_size = shutil.get_terminal_size((100, 20))
         total_width = term_size.columns
         headers['data'] = max(total_width - sum(headers.values()) - len(headers), 0)
@@ -172,8 +173,14 @@ def dump_db(outfile_name):
         print("=" * total_width)
         print(header)
         for entry in entries:
-            response = json.loads(entry[3])
-            json_out.append({'id': entry[0], 'url': entry[1], 'stamp': str(entry[2]), 'data': response})
+            response = json.loads(entry[4])
+            json_out.append({
+                'id': entry[0],
+                'url': entry[1],
+                'stamp': str(entry[2]),
+                'trial_id': entry[3],
+                'data': response
+            })
             cols = [str(col) for col in entry]
             cols[1] = cols[1].strip(SAMPLES_URL_PREFIX)
             data = "["
@@ -187,6 +194,8 @@ def dump_db(outfile_name):
                 cols[-1] = data + "]"
             else:
                 cols[-1] = data[:-2] + "]"
+            if len(cols[3]) > headers['trial_id']:
+                cols[3] = cols[3][0:headers['trial_id'] - 3] + '...'
             print(fmt.format(*cols))
         print("=" * total_width)
 
