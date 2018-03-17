@@ -36,6 +36,13 @@ def dumpdb_command(outfile):
     dump_db(outfile)
 
 
+@app.cli.command('remove')
+@click.argument('sample_name')
+@click.option('--force/--no-force', help='force remove something even if it has responses', default=False)
+def remove_command(sample_name, force):
+    remove_from_sample_db(sample_name, force)
+
+
 @app.cli.command('load')
 def initdb_command():
     """Loads new samples into the samples table."""
@@ -204,6 +211,41 @@ def dump_db(outfile_name):
     print_samples_db()
     print_response_db()
 
+
+def remove_from_sample_db(sample, force=False):
+    db = get_db()
+    sample_url = SAMPLES_URL_PREFIX + sample
+    try:
+        check_count_cur = db.execute('SELECT count FROM samples WHERE url=?', [sample_url])
+        sample_counts = check_count_cur.fetchone()
+        if len(sample_counts) == 0:
+            print(Fore.YELLOW, end='')
+            print("Sample", sample_url, "does not exist.")
+            print(Fore.YELLOW, end='')
+            return
+
+        count = sample_counts[0]
+        if count > 0 and not force:
+            print(Fore.YELLOW, end='')
+            print("Sample", sample_url, "has", count, "responses, so you shouldn't delete it. This requires --force.")
+            print(Fore.YELLOW, end='')
+            return
+
+        remove_cur = db.execute('DELETE FROM samples WHERE url=? AND count=0 ', [sample_url])
+        if remove_cur.rowcount == 1:
+            print(Fore.BLUE, end='')
+            print("Removed", sample_url)
+            print(Fore.RESET, end='')
+        else:
+            print(Fore.YELLOW, end='')
+            print("Failed to remove", sample_url, ". Try again, this might be a race condition.")
+            print(Fore.RESET, end='')
+    except sqlite3.IntegrityError as e:
+        print(Fore.RED, end='')
+        print(e)
+        print(Fore.RESET, end='')
+
+    db.commit()
 
 @app.teardown_appcontext
 def close_db(error):
