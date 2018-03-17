@@ -40,6 +40,9 @@ window.onload = function() {
 
   make_interface();
 
+  // update progress indicator
+  $("#progress_indicator").html("Sample " + (sample_idx+1) + "/" + samples.length);
+
   iface.hide();
 };
 
@@ -179,8 +182,8 @@ function next_submit() {
     // create response object for new trial
     responses[sample_idx] = Response();
 
-    // init interface
-    init_interface();
+    // update progress indicator
+    $("#progress_indicator").html("Sample " + (sample_idx+1) + "/" + samples.length);
 
     // change next button to submit button if it's the last sample
     if (sample_idx === samples.length - 1) {
@@ -335,13 +338,7 @@ function make_interface() {
   background.setZIndex(0);
   line.setZIndex(1);
   Interface.markers = [];
-  init_interface();
   Interface.stage.add(Interface.layer);
-}
-
-function init_interface() {
-// Optional: uncomment to add an initial marker in the center
-//  add_marker((Interface.line_end + Interface.line_begin) / 2);
 }
 
 function bound(x) {
