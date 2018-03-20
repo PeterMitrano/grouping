@@ -231,7 +231,11 @@ def remove_from_sample_db(sample, force=False):
             print(Fore.YELLOW, end='')
             return
 
-        remove_cur = db.execute('DELETE FROM samples WHERE url=? AND count=0 ', [sample_url])
+        if not force:
+            remove_cur = db.execute('DELETE FROM samples WHERE url=? AND count=0 ', [sample_url])
+        else:
+            remove_cur = db.execute('DELETE FROM samples WHERE url=?', [sample_url])
+
         if remove_cur.rowcount == 1:
             print(Fore.BLUE, end='')
             print("Removed", sample_url)
