@@ -59,7 +59,7 @@ audio {
     padding: 10px;
 }
 
-#trial_id.code {
+#experiment_id.code {
     font-size: small;
     font-family: 'Lucida Console', Monaco, monospace;
 }

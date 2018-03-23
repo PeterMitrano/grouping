@@ -15,9 +15,9 @@
   <div class="row" style="text-align: center">
     <br>
     <div class="col"></div>
-    <strong>Your trial ID is:</strong>
-    <span id="trial_id" class="code"></span>
-    <button id="copy_to_clipboard" class="btn btn-default" onclick="copyToClipboard(trial_id)">Copy
+    <strong>Your Experiment ID is:</strong>
+    <span id="experiment_id" class="code"></span>
+    <button id="copy_to_clipboard" class="btn btn-default" onclick="copyToClipboard(experiment_id)">Copy
       <span class="fa fa-copy"></span>
     </button>
     <a id="continue_button" class="btn btn-default pull-right">Continue</a>
@@ -32,15 +32,15 @@
 </iframe>
 </body>
 <script>
-  let id = getTrialID();
+  let id = getExperimentID();
   let b = $('#continue_button');
   window.onload = function() {
-    document.getElementById('trial_id').innerHTML = id;
+    document.getElementById('experiment_id').innerHTML = id;
     b.attr('disabled', true);
   };
   window.setTimeout(function() {
     b.attr('disabled', false);
-    b.attr('href', 'interface?trial-id=' + id + '&samples_per_participant=' + {{samples_per_participant}});
+    b.attr('href', 'interface?experiment-id=' + id + '&samples_per_participant=' + {{samples_per_participant}});
   }, 30000);
 </script>
 </html>

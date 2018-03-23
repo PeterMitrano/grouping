@@ -19,19 +19,19 @@
     <h2>Thanks! We've recorded your responses.</h2>
     <br>
     <br>
-    <p> Your unique trial code is:</p>
-    <p id="trial_id" class="code"></p>
-    <p> Please enter this code into MTurk</p>
+    <p> Your unique experiment code is:</p>
+    <p id="experiment_id" class="code"></p>
+    <!--<p> Please enter this code into MTurk</p>-->
   </div>
 </div>
 </body>
 <script>
-let id = getTrialID();
+let id = getExperimentID();
 if (id) {
-  document.getElementById('trial_id').innerHTML = id;
+  document.getElementById('experiment_id').innerHTML = id;
 }
 else {
-  document.getElementById('trial_id').innerHTML = 'Something went wrong :(';
+  document.getElementById('experiment_id').innerHTML = 'Something went wrong :(';
 }
 </script>
 </html>

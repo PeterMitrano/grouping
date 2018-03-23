@@ -51,6 +51,7 @@ def main():
     parser.add_argument('--workers', '-w', default=1, type=int, help="number of workers to use")
     parser.add_argument('--sample-percentage', '-n', type=float, default=0.25, help="percentage of samples")
     parser.add_argument('--noise', action='store_true', help='add noise')
+    parser.add_argument('--seed', type=int, help='seed the random number generation')
     args = parser.parse_args()
 
     if not os.path.isdir(args.outdir):

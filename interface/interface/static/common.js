@@ -1,4 +1,4 @@
-function generateTrialID() {
+function generateExperimentID() {
   let id = getRandomHex();
   for (let i = 0; i < 8; i++) {
     id += '::';
@@ -15,12 +15,12 @@ function getRandomHex() {
   return hex;
 }
 
-function getTrialID() {
+function getExperimentID() {
   let params = new URLSearchParams(window.location.search);
-  if (params.has('trial-id')) {
-    return params.get('trial-id');
+  if (params.has('experiment-id')) {
+    return params.get('experiment-id');
   }
-  return "No Trial ID";
+  return "No Experiment ID";
 }
 
 function copyToClipboard(element) {

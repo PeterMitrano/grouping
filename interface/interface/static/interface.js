@@ -58,6 +58,8 @@ function show_interface() {
 // Keyboard Shortcuts
 /////////////////////////////////////////////////////////
 Mousetrap.bind('a', play_pause);
+Mousetrap.bind('space', play_pause);
+Mousetrap.bind('space', squelch, 'keyup');
 Mousetrap.bind('s', add_marker_at_scrubber);
 Mousetrap.bind('d', scrub_back);
 
@@ -65,7 +67,16 @@ Mousetrap.bind('d', scrub_back);
 // Audio Player
 /////////////////////////////////////////////////////////
 
-function play_pause() {
+function squelch(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  } else {
+    // internet explorer
+    e.returnValue = false;
+  }
+}
+
+function play_pause(e) {
   if (audio.paused) {
     audio.play();
   }
@@ -81,7 +92,11 @@ setInterval(function() {
     Interface.scrubber.x(x);
     Interface.layer.draw();
   }
-}, 25);
+}, 30);
+
+setInterval(function() {
+  check_disable_button();
+}, 500);
 
 function current_time_to_x() {
   return Interface.line_begin + audio.currentTime / audio.duration *
@@ -103,12 +118,6 @@ audio.addEventListener('play', function() {
   icon.addClass('glyphicon-pause');
 });
 
-audio.addEventListener('suspend', function() {
-  let icon = $('#pause_play_button').find('> span');
-  icon.addClass('glyphicon-play');
-  icon.removeClass('glyphicon-pause');
-});
-
 audio.addEventListener('pause', function() {
   let icon = $('#pause_play_button').find('> span');
   icon.addClass('glyphicon-play');
@@ -116,7 +125,12 @@ audio.addEventListener('pause', function() {
 });
 
 function scrub_back() {
-  audio.currentTime -= 1;
+  if (audio.currentTime - 1 < 0) {
+    audio.currentTime = audio.duration - (1 - audio.currentTime);
+  }
+  else {
+    audio.currentTime -= 1;
+  }
 }
 
 function next_submit() {
@@ -126,7 +140,12 @@ function next_submit() {
   // save the current responses for this sample
   for (let i = 0; i < Interface.markers.length; i++) {
     let m = Interface.markers[i];
-    let marker_info = {'timestamp': x_to_time(m.x())};
+    let timestamp = x_to_time(m.x());
+    if (isNaN(timestamp)) {
+      timestamp = 9999999; // error handling in case someone places a marker _really_ fast
+    }
+    let marker_info = {'timestamp': timestamp};
+    console.log(marker_info);
     if (m.radius() === Interface.marker_large) {
       marker_info.size = 'large';
     }
@@ -146,7 +165,7 @@ function next_submit() {
 
   // save how long it took to complete this sample
   let now = new Date();
-  responses[sample_idx]['duration_seconds'] = now.getTime() - trial_start_time.getTime();
+  responses[sample_idx]['duration_seconds'] = (now.getTime() - trial_start_time.getTime()) / 1000.0;
   trial_start_time = now;
 
   if (sample_idx === samples.length - 1) {
@@ -155,12 +174,12 @@ function next_submit() {
     // HTTP POST to server
     let request = new XMLHttpRequest();
     let finish_time = new Date().getTime();
-    id = getTrialID();
+    id = getExperimentID();
     let metadata = {
     };
     let post_data = {
       'metadata': metadata,
-      'trial_id': id,
+      'experiment_id': id,
       'samples': samples,
       'responses': responses,
     };
@@ -170,7 +189,7 @@ function next_submit() {
     request.send(JSON.stringify(post_data));
 
     // FIXME: redirect to debriefing page
-    window.location.href = 'thankyou?trial-id=' + id;
+    window.location.href = 'thankyou?experiment-id=' + id;
   }
   else {
 
@@ -339,6 +358,7 @@ function make_interface() {
   line.setZIndex(1);
   Interface.markers = [];
   Interface.stage.add(Interface.layer);
+  Interface.loaded = true;
 }
 
 function bound(x) {
@@ -352,7 +372,6 @@ function add_marker_at_scrubber() {
       'id': new_marker.marker_id,
       'at': x_to_time(new_marker.x())
     };
-    console.log(new_marker.x());
     responses[sample_idx]['edit_history'].push(action);
 }
 
@@ -366,4 +385,18 @@ function add_marker(x_pos) {
   Interface.layer.draw();
   Interface.markers.push(clone);
   return clone;
+}
+
+function check_disable_button() {
+  let trial_duration_ms = 0;
+  if (trial_start_time) {
+      let now = new Date();
+      trial_duration_ms = (now.getTime() - trial_start_time.getTime());
+  }
+  if ((Interface.loaded && Interface.markers.length == 0) || trial_duration_ms < 1000) {
+    $('#next-submit-button').prop('disabled', true);
+  }
+  else {
+    $('#next-submit-button').prop('disabled', false);
+  }
 }

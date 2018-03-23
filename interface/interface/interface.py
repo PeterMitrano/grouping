@@ -3,6 +3,7 @@ import os
 import urllib
 
 from bs4 import BeautifulSoup
+import numpy as np
 import shutil
 import sqlite3
 from collections import OrderedDict
@@ -159,7 +160,7 @@ def dump_db(outfile_name):
         print("=" * w)
 
     def print_response_db():
-        responses_cur = db.execute('SELECT id, url, stamp, trial_id, data FROM responses ORDER BY stamp DESC')
+        responses_cur = db.execute('SELECT id, url, stamp, experiment_id, data FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
         json_out = []
@@ -168,7 +169,7 @@ def dump_db(outfile_name):
         headers['id'] = 3
         headers['url'] = 20
         headers['stamp'] = 27
-        headers['trial_id'] = 13
+        headers['experiment_id'] = 13
         term_size = shutil.get_terminal_size((100, 20))
         total_width = term_size.columns
         headers['data'] = max(total_width - sum(headers.values()) - len(headers), 0)
@@ -185,12 +186,13 @@ def dump_db(outfile_name):
                 'id': entry[0],
                 'url': entry[1],
                 'stamp': str(entry[2]),
-                'trial_id': entry[3],
+                'experiment_id': entry[3],
                 'data': response
             })
             cols = [str(col) for col in entry]
             cols[1] = cols[1].strip(SAMPLES_URL_PREFIX)
             data = "["
+            print(response['final_response'])
             for d in response['final_response']:
                 s = "%0.2f, " % d['timestamp']
                 if len(data + s) > headers['data'] - 4:
@@ -201,8 +203,8 @@ def dump_db(outfile_name):
                 cols[-1] = data + "]"
             else:
                 cols[-1] = data[:-2] + "]"
-            if len(cols[3]) > headers['trial_id']:
-                cols[3] = cols[3][0:headers['trial_id'] - 3] + '...'
+            if len(cols[3]) > headers['experiment_id']:
+                cols[3] = cols[3][0:headers['experiment_id'] - 3] + '...'
             print(fmt.format(*cols))
         print("=" * total_width)
 
@@ -251,6 +253,21 @@ def remove_from_sample_db(sample, force=False):
 
     db.commit()
 
+
+def sample_new_urls(entries, samples_per_participant):
+    """ samples from a*x^a-1 """
+    a = 10
+    sample_indeces = []
+    while True:
+        idx = int(np.random.power(a) * entries.shape[0])
+        if idx not in sample_indeces:
+            sample_indeces.append(idx)
+        if len(sample_indeces) == samples_per_participant:
+            break
+    sample_indeces = np.array(sample_indeces)
+    return entries[sample_indeces]
+
+
 @app.teardown_appcontext
 def close_db(error):
     """Closes the database again at the end of the request."""
@@ -266,7 +283,7 @@ def responses():
     ip_addr = request.remote_addr
     stamp = datetime.now()
     metadata = req_data['metadata']
-    trial_id = req_data['trial_id']
+    experiment_id = req_data['experiment_id']
 
     sample_responses = req_data['responses']
     for idx, data in enumerate(sample_responses):
@@ -274,8 +291,8 @@ def responses():
         # sort the final response by timestamps for sanity
         sorted_final_response = sorted(data['final_response'], key=lambda d: d['timestamp'])
         data['final_response'] = sorted_final_response
-        db.execute('INSERT INTO responses (url, ip_addr, stamp, trial_id, metadata, data) VALUES (?, ?, ?, ?, ?, ?)',
-                   [url, ip_addr, stamp, trial_id, json.dumps(metadata), json.dumps(data)])
+        db.execute('INSERT INTO responses (url, ip_addr, stamp, experiment_id, metadata, data) VALUES (?, ?, ?, ?, ?, ?)',
+                   [url, ip_addr, stamp, experiment_id, json.dumps(metadata), json.dumps(data)])
 
     for sample in samples:
         db.execute('UPDATE samples SET count = count + 1 WHERE url= ?', [sample['url']])
@@ -384,17 +401,18 @@ def root():
 @app.route('/interface', methods=['GET'])
 def interface():
     db = get_db()
-    cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
-    entries = cur.fetchall()
+    cur = db.execute('SELECT url, count FROM samples ORDER BY count DESC')
+    entries = np.array(cur.fetchall())
     samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
     if samples_per_participant <= 0 or samples_per_participant > 30:
         return render_template('error.html', reason='Number of samples per participant must be between 1 and 30')
-    elif len(entries) < samples_per_participant:
+    elif entries.shape[0] < samples_per_participant:
         return render_template('error.html', reason='Not samples available for response.')
     else:
-        samples = [{'url': e[0]} for e in entries[:samples_per_participant]]
+        # randomly sample according to a power distribution--samples with fewer weights are more likely to be chosen
+        urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
+        samples = [{'url': e[0]} for e in urls_for_new_experiment]
         return render_template('interface.html', samples=json.dumps(samples))
-
 
 if __name__ == '__main__':
     app.run()

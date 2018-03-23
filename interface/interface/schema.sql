@@ -13,7 +13,7 @@ create table responses (
   url text not null,
   ip_addr text not null,
   stamp timestamp not null, -- the number of seconds since 1970-01-01 00:00:00 UTC
-  trial_id text not null,
+  experiment_id text not null,
   metadata text not null,
   data text not null
 );
