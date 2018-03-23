@@ -15,7 +15,6 @@ from interface.interface.interface import SAMPLES_URL_PREFIX
 
 def main():
     parser = argparse.ArgumentParser("merges a csv of survey responses, and a sqlite3 database of responses.")
-    parser.add_argument('survery_responses', help='csv file of survery responses downloaded from google sheets')
     parser.add_argument('database', help='sqlite3 database file of survey responses downloaded from the server')
     parser.add_argument('samples_folder', help='a folder with all the samples from the database')
     parser.add_argument('outfile', help='output file (EX: train_dataset.npz)')
