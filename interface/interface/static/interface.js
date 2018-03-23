@@ -145,7 +145,6 @@ function next_submit() {
       timestamp = 9999999; // error handling in case someone places a marker _really_ fast
     }
     let marker_info = {'timestamp': timestamp};
-    console.log(marker_info);
     if (m.radius() === Interface.marker_large) {
       marker_info.size = 'large';
     }
