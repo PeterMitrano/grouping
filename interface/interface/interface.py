@@ -18,14 +18,14 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 
 app.config.update(dict(
-    DATABASE=os.path.join(app.root_path, 'interface.db'),
+    DATABASE=os.path.join(app.root_path, 'db', 'interface.db'),
     SECRET_KEY='C796D37C6D491E8F0C6E9B83EED34C15C0F377F9F0F3CBB3216FBBF776DA6325',
     USERNAME='admin',
     PASSWORD='password'
 ))
 
 DEFAULT_SAMPLES_PER_PARTICIPANT = 10
-SAMPLES_URL_PREFIX = 'https://users.wpi.edu/~mprlab/grouping/data/samples/'
+SAMPLES_URL_PREFIX = 'http://mprlab.wpi.edu/samples/'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))  # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
 
@@ -45,7 +45,7 @@ def remove_command(sample_name, force):
 
 
 @app.cli.command('load')
-def initdb_command():
+def load_command():
     """Loads new samples into the samples table."""
     success = load()
 
@@ -90,8 +90,6 @@ def init_db():
     with app.open_resource('schema.sql', mode='r') as f:
         db.cursor().executescript(f.read())
 
-    load()
-
     db.commit()
 
     print(Fore.RED + "Database Initialized" + Style.RESET_ALL)
@@ -102,9 +100,8 @@ def load():
     db = get_db()
 
     # insert all the files from the file system
-    sample_names = open(APP_STATIC + "/samples/index.txt").readlines()
+    sample_names = os.listdir("/var/www/html/grouping/samples")
     for sample_name in sample_names:
-        sample_name = sample_name.strip("\n")
         if sample_name:  # check for empty string
             sample_url = SAMPLES_URL_PREFIX + sample_name
             try:
@@ -139,7 +136,7 @@ def dump_db(outfile_name):
         entries = samples_cur.fetchall()
 
         # figure out dimensions
-        url_w = "30"
+        url_w = "100"
         count_w = "5"
 
         header_format = "{:<" + url_w + "." + url_w + "s} {:s}"
@@ -334,6 +331,8 @@ def manage_post():
     skipped_removals = []
     db = get_db()
 
+    print(unselected_samples)
+
     # Add samples (skip duplicates)
     for sample_url in selected_samples:
         try:
@@ -361,21 +360,16 @@ def manage_post():
 
 @app.route('/manage', methods=['GET'])
 def manage_get():
-    # get list of possible samples from CCC
+    # get list of possible samples
     try:
-        r = requests.get(SAMPLES_URL_PREFIX)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        sample_links = soup.find_all('a')
         samples = []
-        for link in sample_links:
-            sample_name = link.get('href')
-            sample_name = urllib.parse.unquote(sample_name)
-            if 'mp3' in sample_name:
-                sample = {
-                    'url': SAMPLES_URL_PREFIX + sample_name,
-                    'name': sample_name
-                }
-                samples.append(sample)
+        sample_names = os.listdir("/var/www/html/grouping/samples")
+        for sample_name in sample_names:
+            sample = {
+                'url': SAMPLES_URL_PREFIX + sample_name,
+                'name': sample_name
+            }
+            samples.append(sample)
 
         db = get_db()
         samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
@@ -389,8 +383,7 @@ def manage_get():
 
         return render_template('manage.html', samples=json.dumps(samples), db_samples=db_samples)
     except requests.exceptions.ProxyError:
-        return render_template('error.html', reason="Failed to contact CCC for list of samples. \
-                                                     You can't use /manage on the pythonanywhere hosted website")
+        return render_template('error.html', reason="Failed to contact sever for list of samples.")
 
 
 @app.route('/', methods=['GET'])
