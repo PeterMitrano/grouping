@@ -68,3 +68,6 @@ audio {
     visibility: hidden;
 }
 
+#consent {
+    font-size: medium;
+}

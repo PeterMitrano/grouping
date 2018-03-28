@@ -12,25 +12,59 @@
 <body>
 <div class="container">
   <div class="jumbotron">
-    <br>
-    <br>
-    <br>
-    <h2>Welcome to the musical grouping study.</h2>
-    <br>
-    <br>
-    <h3>
-      Perception of Musical Groups
-    </h3>
-    <p>
-      The purpose of this study is to examine the ways in which listeners distinguish groupings in music. A group may be formed by a number of factors including temporal proximity, timbral or dynamic contrast, register, and pitch contour. Rather than isolating each of these parameters, we presented participants with excerpts of actual music in order to see how parameters compete and exert primacy in the grouping process. The data will have two primary uses. First, it will contribute to the cognitive psychology literature that seeks to explain how we make distinctions and connections in musical experience. Second, we plan to use our data in machine learning algorithms to determine if a machine can generalize our data in order to determine groupings in examples not previously heard. Such a system would be useful both as a tool for composers to learn their musical preferences and tendencies and as part of a system that allows musical robots to improvise with humans.
+    <p id="consent">
+      Informed Consent Agreement for Participation in a Research Study
+      <br>
+      <br>
+      Investigator: Scott Barton, sdbarton@wpi.edu
+      <br>
+      <br>
+      The purpose of this study is to determine how listeners perceive musical groupings. You will listen to a number of
+      musical excerpts and indicate the beginnings of perceived groups. By participating, you are contributing to an
+      effort to better understand how our perceptual and cognitive mechanisms work, which can be used in the development
+      of new musical technologies. The experiment should last about 15 minutes. As long as the volume is kept to a
+      reasonable level, there should be few risks in the experiment.
+      <br>
+      <br>
+      Participants will be identified only by a randomly-generated ID in the data. If you are participating in this
+      study via Amazon Mechanical Turk, you MTurk ID will also be stored, which can be linked to personal information.
+      MTurk ID’s will be stored on a password-protected computer and will not be published. Any publication or
+      presentation of the data will not identify you.
+      <br>
+      <br>
+      For more information about this research or about the rights of research participants, contact:
+      <br>
+      Professor Scott Barton, 774.420.4357, sdbarton@wpi.edu
+      <br>
+      IRB Chair Professor Kent Rissmiller, 508.831.5019, kjr@wpi.edu
+      <br>
+      University Compliance Officer Jon Bartelson, 508.831.5725, jonb@wpi.edu
+      <br>
+      <br>
+
+      Your participation in this research is voluntary. You may decide to stop participating in the research at any
+      time, though the experiment must be completed to the best of your abilities in order to receive payment. The
+      project investigators retain the right to cancel or postpone the experimental procedures at any time they see fit.
+      <br>
+      <br>
+
+      <strong>
+        By clicking “Accept and Continue” below, you acknowledge that you have been informed about and consent to be a
+        participant in the study described above.
+      </strong>
+
     </p>
     <br>
-    <a id="begin_button" class="btn btn-primary">Begin Survey</a>
+    <a id="begin_button" class="btn btn-primary">Accept and Continue</a>
   </div>
 </div>
 </body>
 <script>
 let id = generateExperimentID();
 $("#begin_button").attr('href', "survey?experiment-id=" + id + "&samples_per_participant=" + {{samples_per_participant}});
+
+
+
+
 </script>
 </html>
