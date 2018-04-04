@@ -188,7 +188,7 @@ function next_submit() {
     request.send(JSON.stringify(post_data));
 
     // FIXME: redirect to debriefing page
-    window.location.href = 'thankyou?experiment-id=' + id;
+    window.location.href = 'thankyou?assignmentId=' + assignmentId + '&experiment-id=' + id;
   }
   else {
 

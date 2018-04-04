@@ -189,7 +189,6 @@ def dump_db(outfile_name):
             cols = [str(col) for col in entry]
             cols[1] = cols[1].strip(SAMPLES_URL_PREFIX)
             data = "["
-            print(response['final_response'])
             for d in response['final_response']:
                 s = "%0.2f, " % d['timestamp']
                 if len(data + s) > headers['data'] - 4:
@@ -296,6 +295,8 @@ def responses():
 
     db.commit()
 
+    # submit the answers to mechanical turk if necessary as well
+
     data = {'status': 'ok'}
     js = json.dumps(data)
     resp = Response(js, status=200, mimetype='application/json')
@@ -305,18 +306,36 @@ def responses():
 @app.route('/survey', methods=['GET'])
 def survey():
     samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    return render_template('survey.html', samples_per_participant=samples_per_participant)
+    assignmentId = request.args.get('assignmentId', None)
+    return render_template('survey.html', samples_per_participant=samples_per_participant, assignmentId=assignmentId)
 
 
 @app.route('/welcome', methods=['GET'])
 def welcome():
     samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    return render_template('welcome.html', samples_per_participant=samples_per_participant)
+    assignmentId = int(request.args.get('assignmentId', False))
+    if assignmentId:
+        return render_template('welcome.html', samples_per_participant=samples_per_participant, assignmentId=assignmentId)
+    else:
+        return render_template('welcome.html', samples_per_participant=samples_per_participant, assignmentId="undefined")
+
+
+@app.route('/thankyou_mturk', methods=['GET'])
+def thank_you_mturk():
+    assignmentId = request.args.get('assignmentId', None)
+    return render_template('thankyou_mturk.html', assignmentId=assignmentId)
+
+
+@app.route('/mturk_submit', methods=['GET'])
+def mturk_submit():
+    assignmentId = request.args.get('assignmentId', None)
+    return "mturk submit"
 
 
 @app.route('/thankyou', methods=['GET'])
 def thank_you():
-    return render_template('thankyou.html')
+    assignmentId = request.args.get('assignmentId', None)
+    return render_template('thankyou.html', assignmentId=assignmentId)
 
 
 @app.route('/manage', methods=['POST'])
@@ -397,6 +416,7 @@ def interface():
     cur = db.execute('SELECT url, count FROM samples ORDER BY count DESC')
     entries = np.array(cur.fetchall())
     samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
+    assignmentId = request.args.get('assignmentId', None)
     if samples_per_participant <= 0 or samples_per_participant > 30:
         return render_template('error.html', reason='Number of samples per participant must be between 1 and 30')
     elif entries.shape[0] < samples_per_participant:
@@ -405,7 +425,7 @@ def interface():
         # randomly sample according to a power distribution--samples with fewer weights are more likely to be chosen
         urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
         samples = [{'url': e[0]} for e in urls_for_new_experiment]
-        return render_template('interface.html', samples=json.dumps(samples))
+        return render_template('interface.html', samples=json.dumps(samples), assignmentId=assignmentId)
 
 if __name__ == '__main__':
     app.run()

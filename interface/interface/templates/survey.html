@@ -40,7 +40,7 @@
   };
   window.setTimeout(function() {
     b.attr('disabled', false);
-    b.attr('href', 'interface?experiment-id=' + id + '&samples_per_participant=' + {{samples_per_participant}});
+    b.attr('href', 'interface?assignmentId=' + {{assignmentId}} + '&experiment-id=' + id + '&samples_per_participant=' + {{samples_per_participant}});
   }, 30000);
 </script>
 </html>

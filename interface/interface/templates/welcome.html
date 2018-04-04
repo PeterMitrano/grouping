@@ -61,7 +61,8 @@
 </body>
 <script>
 let id = generateExperimentID();
-$("#begin_button").attr('href', "survey?experiment-id=" + id + "&samples_per_participant=" + {{samples_per_participant}});
+let assignmentId = {{assignmentId|safe}};
+$("#begin_button").attr('href', "survey?assignmentId=" + assignmentId + "&experiment-id=" + id + "&samples_per_participant=" + {{samples_per_participant}});
 
 
 
