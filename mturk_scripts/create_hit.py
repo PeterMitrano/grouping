@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import sys
 import boto3
@@ -27,6 +29,7 @@ def main():
     }
     mturk_environment = environments["live"] if create_hits_in_live else environments["sandbox"]
 
+    # restrict to mturk workers that have 80% hit accept rate
     worker_requirements = [{
         'QualificationTypeId': '000000000000000000L0',
         'Comparator': 'GreaterThanOrEqualTo',
@@ -44,15 +47,16 @@ def main():
 
     # Create the HIT
     response = client.create_hit(
-        MaxAssignments=5,
-        LifetimeInSeconds=6000,  # amount of time that can elapse between creation and acceptance of the HIT
-        AssignmentDurationInSeconds=1200,  # amount of time they can work on the HIT for
+        MaxAssignments=1,
+        LifetimeInSeconds=2*60*60,  # amount of time that can elapse between creation and acceptance of the HIT
+        AssignmentDurationInSeconds=15*3*60,  # amount of time they can work on the HIT for
         Reward=mturk_environment['reward'],
         Title='Annotate Groupings in Music Clips',
         Keywords='data, music, audio, listening, easy, research',
         Description=description,
         Question=question_xml,
         QualificationRequirements=worker_requirements,
+        AutoApprovalDelayInSeconds=24*60*60,  # gives us 24 hours to reject a response
     )
 
     # The response included several fields that will be helpful later
