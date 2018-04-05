@@ -44,7 +44,7 @@ def remove_command(sample_name, force):
 
 @app.cli.command('load')
 def load_command():
-    """Loads new samples into the samples table."""
+    """ insert ALL the files from folder /var/www/html/grouping/samples """
     success = load()
 
     if success:
@@ -97,7 +97,7 @@ def init_db():
 def load():
     db = get_db()
 
-    # insert all the files from the file system
+    # insert ALL the files from the file system
     sample_names = os.listdir("/var/www/html/grouping/samples")
     for sample_name in sample_names:
         if sample_name:  # check for empty string
