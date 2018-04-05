@@ -20,8 +20,8 @@
     <br>
     <br>
     <p> Please paste your MTurk ID below to receive approval and payment.</p>
-    <form action="/mturk_submit">
-      <input id="mturk_id" type="text" name="mturk_id">
+    <form id="form">
+      <input id="worker_id" type="text" name="worker_id">
       <input type="submit" value="Submit">
     </form>
   </div>
@@ -29,13 +29,21 @@
 </body>
 <script>
 
-let id = getExperimentID();
-if (id) {
-  document.getElementById('experiment_id').innerHTML = id;
-}
-else {
-  document.getElementById('experiment_id').innerHTML = 'Something went wrong :(';
-}
+$("#form").submit(function (e) {
+    e.preventDefault();
+
+    // HTTP POST to amazon
+    let request = new XMLHttpRequest();
+    let workerId = $("#worker_id").val();
+    let url = "{{submit_url}}";
+    // we still need to append workerId
+    url += "&workerId=" + workerId;
+    request.open('POST', url, true);
+    request.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    request.send();
+
+    window.location.href = "thankyou?";
+})
 
 </script>
 </html>

@@ -16,11 +16,11 @@
     <br>
     <div class="col"></div>
     <strong>Your Experiment ID is:</strong>
-    <span id="experiment_id" class="code"></span>
+    <span id="experiment_id" class="code">{{experimentId}}</span>
     <button id="copy_to_clipboard" class="btn btn-default" onclick="copyToClipboard(experiment_id)">Copy
       <span class="fa fa-copy"></span>
     </button>
-    <a id="continue_button" class="btn btn-default pull-right">Continue</a>
+    <a id="continue_button" class="btn btn-default pull-right" href="{{next_href}}">Continue</a>
     <br>
   </div>
 </div>
@@ -32,15 +32,12 @@
 </iframe>
 </body>
 <script>
-  let id = getExperimentID();
   let b = $('#continue_button');
   window.onload = function() {
-    document.getElementById('experiment_id').innerHTML = id;
     b.attr('disabled', true);
   };
   window.setTimeout(function() {
     b.attr('disabled', false);
-    b.attr('href', 'interface?assignmentId=' + {{assignmentId}} + '&experiment-id=' + id + '&samples_per_participant=' + {{samples_per_participant}});
   }, 30000);
 </script>
 </html>

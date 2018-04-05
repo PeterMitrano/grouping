@@ -96,7 +96,7 @@ setInterval(function() {
 
 setInterval(function() {
   check_disable_button();
-}, 500);
+}, 100);
 
 function current_time_to_x() {
   return Interface.line_begin + audio.currentTime / audio.duration *
@@ -137,6 +137,9 @@ function next_submit() {
   // pause the music
   audio.pause();
 
+  // disable the next/submit button
+  $('#next-submit-button').prop('disabled', true);
+
   // save the current responses for this sample
   for (let i = 0; i < Interface.markers.length; i++) {
     let m = Interface.markers[i];
@@ -173,12 +176,11 @@ function next_submit() {
     // HTTP POST to server
     let request = new XMLHttpRequest();
     let finish_time = new Date().getTime();
-    id = getExperimentID();
     let metadata = {
     };
     let post_data = {
       'metadata': metadata,
-      'experiment_id': id,
+      'experiment_id': experiment_id,
       'samples': samples,
       'responses': responses,
     };
@@ -188,7 +190,7 @@ function next_submit() {
     request.send(JSON.stringify(post_data));
 
     // FIXME: redirect to debriefing page
-    window.location.href = 'thankyou?assignmentId=' + assignmentId + '&experiment-id=' + id;
+    window.location.href = next_href;
   }
   else {
 

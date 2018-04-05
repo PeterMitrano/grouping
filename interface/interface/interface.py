@@ -1,8 +1,6 @@
 import json
 import os
-import urllib
 
-from bs4 import BeautifulSoup
 import numpy as np
 import shutil
 import sqlite3
@@ -24,8 +22,8 @@ app.config.update(dict(
     PASSWORD='password'
 ))
 
-DEFAULT_SAMPLES_PER_PARTICIPANT = 10
-SAMPLES_URL_PREFIX = 'http://mprlab.wpi.edu/samples/'
+DEFAULT_SAMPLES_PER_PARTICIPANT = 15
+SAMPLES_URL_PREFIX = 'https://mprlab.wpi.edu/samples/'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))  # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
 
@@ -287,8 +285,9 @@ def responses():
         # sort the final response by timestamps for sanity
         sorted_final_response = sorted(data['final_response'], key=lambda d: d['timestamp'])
         data['final_response'] = sorted_final_response
-        db.execute('INSERT INTO responses (url, ip_addr, stamp, experiment_id, metadata, data) VALUES (?, ?, ?, ?, ?, ?)',
-                   [url, ip_addr, stamp, experiment_id, json.dumps(metadata), json.dumps(data)])
+        db.execute(
+            'INSERT INTO responses (url, ip_addr, stamp, experiment_id, metadata, data) VALUES (?, ?, ?, ?, ?, ?)',
+            [url, ip_addr, stamp, experiment_id, json.dumps(metadata), json.dumps(data)])
 
     for sample in samples:
         db.execute('UPDATE samples SET count = count + 1 WHERE url= ?', [sample['url']])
@@ -305,37 +304,41 @@ def responses():
 
 @app.route('/survey', methods=['GET'])
 def survey():
-    samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignmentId = request.args.get('assignmentId', None)
-    return render_template('survey.html', samples_per_participant=samples_per_participant, assignmentId=assignmentId)
+    samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
+    assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
+    href = "interface?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
+                                                                                             samples_per_participant,
+                                                                                             assignment_id)
+    return render_template('survey.html', experimentId=experiment_id, next_href=href)
 
 
 @app.route('/welcome', methods=['GET'])
 def welcome():
-    samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignmentId = int(request.args.get('assignmentId', False))
-    if assignmentId:
-        return render_template('welcome.html', samples_per_participant=samples_per_participant, assignmentId=assignmentId)
-    else:
-        return render_template('welcome.html', samples_per_participant=samples_per_participant, assignmentId="undefined")
+    samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
+    assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    # lol this is such good code...
+    random_numbers = [np.random.randint(0, 255) for _ in range(8)]
+    experiment_id = "{:2x}::{:2x}::{:2x}::{:2x}::{:2x}::{:2x}::{:2x}::{:2x}".format(*random_numbers)
+    href = "survey?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
+                                                                                          samples_per_participant,
+                                                                                          assignmentId)
+    return render_template('welcome.html', next_href=href)
 
 
 @app.route('/thankyou_mturk', methods=['GET'])
 def thank_you_mturk():
-    assignmentId = request.args.get('assignmentId', None)
-    return render_template('thankyou_mturk.html', assignmentId=assignmentId)
-
-
-@app.route('/mturk_submit', methods=['GET'])
-def mturk_submit():
-    assignmentId = request.args.get('assignmentId', None)
-    return "mturk submit"
+    assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
+    submit_url = "https://workersandbox.mturk.com/mturk/externalSubmit?assignmentId={:s}&experimentId={:s}".format(
+        assignment_id, experiment_id)
+    return render_template('thankyou_mturk.html', submit_url=submit_url)
 
 
 @app.route('/thankyou', methods=['GET'])
 def thank_you():
-    assignmentId = request.args.get('assignmentId', None)
-    return render_template('thankyou.html', assignmentId=assignmentId)
+    assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    return render_template('thankyou.html', assignmentId=assignment_id)
 
 
 @app.route('/manage', methods=['POST'])
@@ -349,8 +352,6 @@ def manage_post():
     removals = []
     skipped_removals = []
     db = get_db()
-
-    print(unselected_samples)
 
     # Add samples (skip duplicates)
     for sample_url in selected_samples:
@@ -407,7 +408,8 @@ def manage_get():
 
 @app.route('/', methods=['GET'])
 def root():
-    return redirect(url_for('welcome'))
+    assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    return redirect(url_for('welcome', assignmentId=assignmentId))
 
 
 @app.route('/interface', methods=['GET'])
@@ -415,8 +417,15 @@ def interface():
     db = get_db()
     cur = db.execute('SELECT url, count FROM samples ORDER BY count DESC')
     entries = np.array(cur.fetchall())
-    samples_per_participant = int(request.args.get('samples_per_participant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignmentId = request.args.get('assignmentId', None)
+    samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
+    assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
+
+    if not assignment_id or assignment_id == "ASSIGNMENT_ID_NOT_AVAILABLE":
+        href = "thankyou_mturk?assignmentId={:s}&experimentId={:s}".format(assignment_id, experiment_id)
+    else:
+        href = "thankyou?"
+
     if samples_per_participant <= 0 or samples_per_participant > 30:
         return render_template('error.html', reason='Number of samples per participant must be between 1 and 30')
     elif entries.shape[0] < samples_per_participant:
@@ -425,7 +434,9 @@ def interface():
         # randomly sample according to a power distribution--samples with fewer weights are more likely to be chosen
         urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
         samples = [{'url': e[0]} for e in urls_for_new_experiment]
-        return render_template('interface.html', samples=json.dumps(samples), assignmentId=assignmentId)
+        return render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id,
+                               next_href=href)
+
 
 if __name__ == '__main__':
     app.run()
