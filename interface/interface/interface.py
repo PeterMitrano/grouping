@@ -319,7 +319,7 @@ def welcome():
     assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
     # lol this is such good code...
     random_numbers = [np.random.randint(0, 255) for _ in range(8)]
-    experiment_id = "{:2x}::{:2x}::{:2x}::{:2x}::{:2x}::{:2x}::{:2x}::{:2x}".format(*random_numbers)
+    experiment_id = "{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}".format(*random_numbers)
     href = "survey?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
                                                                                           samples_per_participant,
                                                                                           assignmentId)
@@ -421,7 +421,7 @@ def interface():
     assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
     experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
 
-    if not assignment_id or assignment_id == "ASSIGNMENT_ID_NOT_AVAILABLE":
+    if assignment_id and assignment_id != "ASSIGNMENT_ID_NOT_AVAILABLE":
         href = "thankyou_mturk?assignmentId={:s}&experimentId={:s}".format(assignment_id, experiment_id)
     else:
         href = "thankyou?"
