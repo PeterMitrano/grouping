@@ -318,8 +318,8 @@ def welcome():
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
     assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
     # lol this is such good code...
-    random_numbers = [np.random.randint(0, 255) for _ in range(8)]
-    experiment_id = "{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}".format(*random_numbers)
+    random_numbers = [np.random.randint(0, 255) for _ in range(9)]
+    experiment_id = "{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}".format(*random_numbers)
     href = "survey?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
                                                                                           samples_per_participant,
                                                                                           assignmentId)
