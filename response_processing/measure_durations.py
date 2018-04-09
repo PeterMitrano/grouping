@@ -3,6 +3,7 @@
 import argparse
 import datetime
 import json
+import numpy as np
 
 
 def main():
@@ -22,14 +23,21 @@ def main():
         experiments[trial["experiment_id"]].append(trial)
 
     # print the information
+    print("number of trials, total time, mean time per trial, median trial time, stddev, (experiment id, time stamp)")
     for experiment_id, trials_by_experiment in experiments.items():
         total_time_s = 0
+        trial_times = []
         for trial in trials_by_experiment:
             trial_time_s = float(trial["data"]["duration_seconds"])
             total_time_s += trial_time_s
+            trial_times.append(trial_time_s)
+        mean_time_s = np.mean(trial_times)
+        median_time_s = np.median(trial_times)
+        deviation = np.std(trial_times)
         total_time_formatted = str(datetime.timedelta(seconds=total_time_s))
+        num_trials = len(trial_times)
         stamp = trial["stamp"]
-        print("{:s} ({:s}, {:s})".format(total_time_formatted, experiment_id, stamp))
+        print("{:d} {:s} {: 5.3f} {: 5.3f} {: 5.3f} ({:s}, {:s})".format(num_trials, total_time_formatted, mean_time_s, median_time_s, deviation, experiment_id, stamp))
         if args.verbose:
             for trial in trials_by_experiment:
                 trial_time_s = float(trial["data"]["duration_seconds"])

@@ -10,7 +10,7 @@ from interface.interface.interface import SAMPLES_URL_PREFIX
 
 
 def main():
-    parser = argparse.ArgumentParser("merges a csv of survey responses, and a sqlite3 database of responses.")
+    parser = argparse.ArgumentParser("plots the final responses from a sqlite3 database of responses.")
     parser.add_argument('database', help='sqlite3 database file of survey responses downloaded from the server')
 
     args = parser.parse_args()
@@ -31,6 +31,10 @@ def main():
         if name not in sample_responses_dict:
             sample_responses_dict[name] = []
         sample_responses_dict[name].append(group_times_s)
+
+    if len(sample_responses_dict) > 10:
+        print("There are more than 10 responses. You probably don't want to run this script. Aborting.")
+        return
 
     for sample, responses in sample_responses_dict.items():
         if len(responses) > 0:
