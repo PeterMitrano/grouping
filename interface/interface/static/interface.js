@@ -338,7 +338,15 @@ function make_interface() {
   });
 
   Interface.layer.on('click', function(event) {
-    if (event.evt.metaKey) {
+    insert_key_combo = false;
+    if (navigator.appVersion.indexOf("Win") != -1 && event.evt.ctrlKey) {
+      insert_key_combo = true;
+    }
+    else if (event.evt.metaKey) {
+      insert_key_combo = true;
+    }
+
+    if (insert_key_combo) {
       // insert new marker
       let x = Interface.stage.getPointerPosition().x;
       if ((x > Interface.line_begin) && (x < Interface.line_end)) {
