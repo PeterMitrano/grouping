@@ -1,34 +1,44 @@
 import json
 import numpy as np
 
+blacklisted_ids = [
+    "19::57::dc::4f::38::63::58::ee::e8",
+    "79::71::78:: c::b9::1b::5c::3b",
+    "8d::67::f5::cd::1b::8c::07::78::e4",
+]
 
-def load(json_filename):
+
+def load_by_experiment(json_filename):
     trials = json.load(open(json_filename, "r"))
 
     # group by experiment into a dict
-    experiments = {}
+    responses_by_experiment = {}
     for trial in trials:
-        if trial["experiment_id"] not in experiments:
-            experiments[trial["experiment_id"]] = []
-        experiments[trial["experiment_id"]].append(trial)
+        experiment_id = trial["experiment_id"]
+        if experiment_id in blacklisted_ids:
+            continue
+        if experiment_id not in responses_by_experiment:
+            responses_by_experiment[experiment_id] = []
+        responses_by_experiment[experiment_id].append(trial)
 
-    return experiments
+    return responses_by_experiment
 
 
-def remove_blacklisted_experiments_inplace(experiments):
-    blacklisted_ids = [
-        "19::57::dc::4f::38::63::58::ee::e8",
-        "79::71::78:: c::b9::1b::5c::3b",
-        "8d::67::f5::cd::1b::8c::07::78::e4",
-    ]
-    for experiment_id in blacklisted_ids:
-        try:
-            del experiments[experiment_id]
-        except KeyError:
-            # it's already gone--great!
-            pass
+def load_by_url(json_filename):
+    trials = json.load(open(json_filename, "r"))
 
-    return experiments
+    # group by experiment into a dict
+    responses_by_url = {}
+    for trial in trials:
+        url = trial["url"]
+        experiment_id = trial["experiment_id"]
+        if experiment_id in blacklisted_ids:
+            continue
+        if url not in responses_by_url:
+            responses_by_url[url] = []
+        responses_by_url[url].append(trial)
+
+    return responses_by_url
 
 
 def get_final_responses(experiments):
