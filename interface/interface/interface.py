@@ -43,9 +43,10 @@ def remove_command(sample_name, force):
 
 
 @app.cli.command('load')
-def load_command():
-    """ insert ALL the files from folder /var/www/html/grouping/samples """
-    success = load()
+@click.argument('directory')
+def load_command(directory):
+    """ insert ALL the files from the given folder """
+    success = load(directory)
 
     if success:
         dump_db(False)
@@ -94,11 +95,17 @@ def init_db():
     return True
 
 
-def load():
+def load(directory):
     db = get_db()
 
+    if not os.path.isdir(directory):
+        print(Fore.RED, end='')
+        print(directory, " is not a directory. Aborting.")
+        print(Fore.RESET, end='')
+        return
+
     # insert ALL the files from the file system
-    sample_names = os.listdir("/var/www/html/grouping/samples")
+    sample_names = os.listdir(directory)
     for sample_name in sample_names:
         if sample_name:  # check for empty string
             sample_url = SAMPLES_URL_PREFIX + sample_name
