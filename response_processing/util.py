@@ -5,6 +5,7 @@ blacklisted_ids = [
     "19::57::dc::4f::38::63::58::ee::e8",
     "79::71::78:: c::b9::1b::5c::3b",
     "8d::67::f5::cd::1b::8c::07::78::e4",
+    "EXPERIMENT_ID_NOT_AVAILABLE"
 ]
 
 
