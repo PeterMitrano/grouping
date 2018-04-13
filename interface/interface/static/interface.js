@@ -402,7 +402,7 @@ function check_disable_button() {
       let now = new Date();
       trial_duration_ms = (now.getTime() - trial_start_time.getTime());
   }
-  if ((Interface.loaded && Interface.markers.length == 0) || trial_duration_ms < 1000) {
+  if ((Interface.loaded && Interface.markers.length == 0) || trial_duration_ms < 16000) {
     $('#next-submit-button').prop('disabled', true);
   }
   else {
