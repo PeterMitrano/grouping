@@ -107,7 +107,16 @@ def load(directory):
     # insert ALL the files from the file system
     sample_names = os.listdir(directory)
     for sample_name in sample_names:
-        if sample_name:  # check for empty string
+        if not sample_name:
+            print(Fore.YELLOW, "Skipping empty", Fore.RESET)
+            continue
+        elif not os.path.isfile(os.path.join(directory, sample_name)):
+            print(Fore.YELLOW, "Skipping directory:", Fore.RESET, sample_name)
+            continue
+        elif not sample_name.endswith("mp3"):
+            print(Fore.YELLOW, "Skipping non-mp3:", Fore.RESET, sample_name)
+            continue
+        else:
             sample_url = SAMPLES_URL_PREFIX + sample_name
             try:
                 db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ', [sample_url, 0])
@@ -280,24 +289,22 @@ def close_db(error):
 def responses():
     db = get_db()
     req_data = request.get_json()
-    samples = req_data['samples']
+    sample = req_data['sample']
     ip_addr = request.remote_addr
     stamp = datetime.now()
     metadata = req_data['metadata']
     experiment_id = req_data['experiment_id']
 
-    sample_responses = req_data['responses']
-    for idx, data in enumerate(sample_responses):
-        url = samples[idx]['url']
-        # sort the final response by timestamps for sanity
-        sorted_final_response = sorted(data['final_response'], key=lambda d: d['timestamp'])
-        data['final_response'] = sorted_final_response
-        db.execute(
-            'INSERT INTO responses (url, ip_addr, stamp, experiment_id, metadata, data) VALUES (?, ?, ?, ?, ?, ?)',
-            [url, ip_addr, stamp, experiment_id, json.dumps(metadata), json.dumps(data)])
+    sample_response = req_data['response']
+    url = sample['url']
+    # sort the final response by timestamps for sanity
+    sorted_final_response = sorted(sample_response['final_response'], key=lambda d: d['timestamp'])
+    sample_response['final_response'] = sorted_final_response
+    db.execute(
+        'INSERT INTO responses (url, ip_addr, stamp, experiment_id, metadata, data) VALUES (?, ?, ?, ?, ?, ?)',
+        [url, ip_addr, stamp, experiment_id, json.dumps(metadata), json.dumps(sample_response)])
 
-    for sample in samples:
-        db.execute('UPDATE samples SET count = count + 1 WHERE url= ?', [sample['url']])
+    db.execute('UPDATE samples SET count = count + 1 WHERE url= ?', [sample['url']])
 
     db.commit()
 

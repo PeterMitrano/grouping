@@ -170,24 +170,23 @@ function next_submit() {
   responses[sample_idx]['duration_seconds'] = (now.getTime() - trial_start_time.getTime()) / 1000.0;
   trial_start_time = now;
 
+  // HTTP POST to server
+  let request = new XMLHttpRequest();
+  let metadata = {
+  };
+  let post_data = {
+    'metadata': metadata,
+    'experiment_id': experiment_id,
+    'sample': samples[sample_idx],
+    'response': responses[sample_idx],
+  };
+  let url = '/responses';
+  request.open('POST', url, true);
+  request.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+  request.send(JSON.stringify(post_data));
+
   if (sample_idx === samples.length - 1) {
     $('#next-submit-button').prop('disabled', true);
-
-    // HTTP POST to server
-    let request = new XMLHttpRequest();
-    let finish_time = new Date().getTime();
-    let metadata = {
-    };
-    let post_data = {
-      'metadata': metadata,
-      'experiment_id': experiment_id,
-      'samples': samples,
-      'responses': responses,
-    };
-    let url = '/responses';
-    request.open('POST', url, true);
-    request.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-    request.send(JSON.stringify(post_data));
 
     // FIXME: redirect to debriefing page
     window.location.href = next_href;
