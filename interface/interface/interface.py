@@ -4,6 +4,7 @@ import os
 import numpy as np
 import shutil
 import sqlite3
+import socket
 from collections import OrderedDict
 from datetime import datetime
 
@@ -84,6 +85,11 @@ def init_db():
     y = input("Are you sure you want to DELETE ALL DATA and re-initialize the database? [y/n]")
     if y != 'y' and y != 'Y':
         print("Aborting.")
+        return False
+
+    hostname = socket.gethostname()
+    if hostname == "mprlab":
+        print(Fore.RED, "hostname is mprlab. You definitely don't want to do this. Aborting.", Fore.RESET)
         return False
 
     # apply the schema
@@ -405,6 +411,19 @@ def manage_post():
 def manage_get():
     # get list of possible samples
     try:
+
+        samples = []
+        subdirs = os.listdir(SAMPLES_ROOT)
+
+        for subdir in subdirs:
+            sample_names = os.listdir(os.path.join(SAMPLES_ROOT, subdir))
+            for sample_name in sample_names:
+                sample = {
+                    'url': os.path.join(SAMPLES_URL_PREFIX, subdir, sample_name),
+                    'name': sample_name
+                }
+                samples.append(sample)
+
         db = get_db()
         samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
         entries = samples_cur.fetchall()
