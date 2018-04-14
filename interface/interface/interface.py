@@ -416,13 +416,24 @@ def manage_get():
         subdirs = os.listdir(SAMPLES_ROOT)
 
         for subdir in subdirs:
-            sample_names = os.listdir(os.path.join(SAMPLES_ROOT, subdir))
-            for sample_name in sample_names:
-                sample = {
-                    'url': os.path.join(SAMPLES_URL_PREFIX, subdir, sample_name),
-                    'name': sample_name
-                }
-                samples.append(sample)
+            full_subdir = os.path.join(SAMPLES_ROOT, subdir)
+            if os.path.isdir(full_subdir):
+                sample_names = os.listdir(full_subdir)
+
+                for sample_name in sample_names:
+                    # skip empty strings, non-files, and non mp3s
+                    if not sample_name:
+                        continue
+                    elif not os.path.isfile(os.path.join(full_subdir, sample_name)):
+                        continue
+                    elif not sample_name.endswith("mp3"):
+                        continue
+
+                    sample = {
+                        'url': os.path.join(SAMPLES_URL_PREFIX, subdir, sample_name),
+                        'name': sample_name
+                    }
+                    samples.append(sample)
 
         db = get_db()
         samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
