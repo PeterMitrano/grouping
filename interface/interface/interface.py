@@ -23,7 +23,8 @@ app.config.update(dict(
 ))
 
 DEFAULT_SAMPLES_PER_PARTICIPANT = 15
-SAMPLES_URL_PREFIX = 'https://mprlab.wpi.edu/samples/'
+SAMPLES_URL_PREFIX = 'https://mprlab.wpi.edu/'
+SAMPLES_ROOT = '/var/www/html/grouping'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))  # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
 
@@ -104,6 +105,14 @@ def load(directory):
         print(Fore.RESET, end='')
         return
 
+    abs_path = os.path.abspath(directory)
+
+    if not abs_path.startswith(SAMPLES_ROOT):
+        print(Fore.RED, "samples must live in subdirectories in " + SAMPLES_ROOT + ". Aborting.", Fore.RESET)
+        return
+
+    subdir = os.path.split(abs_path)[-1]
+
     # insert ALL the files from the file system
     sample_names = os.listdir(directory)
     for sample_name in sample_names:
@@ -117,7 +126,7 @@ def load(directory):
             print(Fore.YELLOW, "Skipping non-mp3:", Fore.RESET, sample_name)
             continue
         else:
-            sample_url = SAMPLES_URL_PREFIX + sample_name
+            sample_url = os.path.join(SAMPLES_URL_PREFIX, subdir, sample_name)
             try:
                 db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ', [sample_url, 0])
                 print(Fore.BLUE, end='')
@@ -165,7 +174,7 @@ def dump_db(outfile_name):
         print("=" * w)
         for entry in entries:
             url = entry[0]
-            url = url.strip(SAMPLES_URL_PREFIX)
+            url = url[len(SAMPLES_URL_PREFIX):]
             count = entry[1]
             print(row_format.format(url, count))
         print("=" * w)
@@ -201,7 +210,7 @@ def dump_db(outfile_name):
                 'data': response
             })
             cols = [str(col) for col in entry]
-            cols[1] = cols[1].strip(SAMPLES_URL_PREFIX)
+            cols[1] = cols[1][len(SAMPLES_URL_PREFIX):]
             data = "["
             for d in response['final_response']:
                 s = "%0.2f, " % d['timestamp']
@@ -396,15 +405,6 @@ def manage_post():
 def manage_get():
     # get list of possible samples
     try:
-        samples = []
-        sample_names = os.listdir("/var/www/html/grouping/samples")
-        for sample_name in sample_names:
-            sample = {
-                'url': SAMPLES_URL_PREFIX + sample_name,
-                'name': sample_name
-            }
-            samples.append(sample)
-
         db = get_db()
         samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
         entries = samples_cur.fetchall()
