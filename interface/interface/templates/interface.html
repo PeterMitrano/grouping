@@ -20,23 +20,11 @@
 <div class="container">
   <div id="instructions" class="row pad-top-20">
     <h3>Instructions</h3>
-    <div class="alert alert-warning">
-      <p>
-        Press play to hear the clip. Listen to the clip as many times as you would like.
-        Indicate the beginning of a group,
-        which may or may not occur simultaneously with an accented note,
-        by placing a marker at the start of the group. Please be accurate in your placement of markers.
-        Repeat these steps for each group that you perceive.
-        Indicate more prominent groupings with the large circle and less prominent groupings with the small circle.
-        When you are satisfied with your response, press "Next". This button will be disabled until you have placed one marker and spent at least 16 seconds on the task.
-        <br>
-        When you are finished with all the clips, the "Submit" button will appear.
-        Click the "Submit" button to end the experiment.
-      </p>
+    <div id="instruction" class="alert alert-warning">
     </div>
-  </div>
-  <div class="text-center">
-    <button id="confirm" class="btn btn-primary" onclick="show_interface()">Yes, I have read the instructions</button>
+    <div class="pull-right">
+      <button id="next_instruction" class="btn btn-primary" onclick="next_instruction()">Next Instruction</button>
+    </div>
   </div>
   <div id="interface" class="row">
     <div class="row pad-top-20" id="controls">
