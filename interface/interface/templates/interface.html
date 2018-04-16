@@ -20,15 +20,17 @@
 <div class="container">
   <div id="instructions" class="row pad-top-20">
     <h3>Instructions</h3>
-    <div id="instruction" class="alert alert-warning">
-    </div>
-    <div class="pull-right">
-      <button id="next_instruction" class="btn btn-primary" onclick="next_instruction()">Next Instruction</button>
+    <div class="alert alert-warning" style="padding-bottom: 48px;">
+      <div id="instruction">
+      </div>
+      <div class="pull-right">
+        <button id="next_instruction" class="btn btn-primary" onclick="next_instruction()">OK</button>
+      </div>
     </div>
   </div>
   <div id="interface" class="row">
     <div class="row pad-top-20" id="controls">
-      <button id="pause_play_button" class="btn btn-sm btn-default" onclick="play_pause()">
+      <button id="pause_play_button" class="btn btn-sm btn-default" onclick="pause_play()">
         <span class="glyphicon glyphicon-play"></span>
       </button>
       <div id="canvas"></div>

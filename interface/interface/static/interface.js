@@ -7,6 +7,7 @@ let background_color = '#D9EDF7';
 let start_time = 0;
 let marker_id_counter = 0;
 let trial_start_time;
+let iface_enabled = false;
 
 function Action(type, id) {
   return {
@@ -24,12 +25,14 @@ function Response() {
 }
 
 
-let instructions = ["Press play to hear the clip. Listen to the clip as many times as you would like.",
+let instructions = ["After you read through all of these instructions, the interface below will be enabled. You will then press play to hear the clip. Listen to the clip as many times as you would like. (click OK)",
 "Indicate the beginning of a group, which may or may not occur simultaneously with an accented note, by placing a marker at the start of the group. Please be accurate in your placement of markers.",
 "Repeat these steps for each group that you perceive. Indicate less prominent groupings with the small circle (<code>alt + click</code>).",
-"When you are satisfied with your response, press 'Next'. This button will be disabled until you have placed one marker and spent at least 16 seconds on the task. You should spend 30 to one minute on each clip.",
-"When you are finished with all the clips, the 'Submit' button will appear. Click the 'Submit button to end the experiment.",
+"When you are satisfied with your response, press 'Next'. This button will be disabled until you have placed one marker and spent at least 16 seconds on the task. You should spend 30 seconds to one minute on each clip.",
+"When you are finished with all the clips, the 'Submit' button will appear. Click the 'Submit' button to end the experiment.",
 ];
+
+let final_instruction = "First, press play to hear the clip. Listen to the clip as many times as you would like. Indicate the beginning of a group, which may or may not occur simultaneously with an accented note, by placing a marker at the start of the group. Please be accurate in your placement of markers. Repeat these steps for each group that you perceive. Indicate less prominent groupings with the small circle. When you are satisfied with your response, press 'Next'. This button will be disabled until you have placed one marker and spent at least 16 seconds on the task. You should spend 30 seconds to one minute on each clip. When you are finished with all the clips, the 'Submit' button will appear. Click the 'Submit' button to end the experiment.";
 let instruction_idx = 0;
 
 /////////////////////////////////////////////////////////
@@ -53,8 +56,8 @@ window.onload = function() {
   $("#progress_indicator").html("Sample " + (sample_idx+1) + "/" + samples.length);
 
  $("#instruction").html(instructions[0]);
-
-  iface.hide();
+ $("#pause_play_button").prop('disabled', true);
+ iface_enabled = false;
 };
 
 function next_instruction() {
@@ -63,7 +66,9 @@ function next_instruction() {
  if (instruction_idx === instructions.length) {
    show_interface();
    $('#next_instruction').hide();
-   $("#instruction").html(instructions.join(" "));
+   $("#instruction").html(final_instruction);
+   $("#pause_play_button").prop('disabled', false);
+   iface_enabled = true;
  }
  else {
      if (instruction_idx === instructions.length - 1) {
@@ -83,8 +88,8 @@ function show_interface() {
 /////////////////////////////////////////////////////////
 // Keyboard Shortcuts
 /////////////////////////////////////////////////////////
-Mousetrap.bind('a', play_pause);
-Mousetrap.bind('space', play_pause);
+Mousetrap.bind('a', pause_play);
+Mousetrap.bind('space', pause_play);
 Mousetrap.bind('space', squelch, 'keyup');
 Mousetrap.bind('s', add_marker_at_scrubber);
 Mousetrap.bind('d', scrub_back);
@@ -102,12 +107,14 @@ function squelch(e) {
   }
 }
 
-function play_pause(e) {
-  if (audio.paused) {
+function pause_play(e) {
+  if (iface_enabled) {
+    if (audio.paused) {
     audio.play();
-  }
-  else {
+    }
+    else {
     audio.pause();
+    }
   }
 }
 
@@ -151,11 +158,13 @@ audio.addEventListener('pause', function() {
 });
 
 function scrub_back() {
-  if (audio.currentTime - 1 < 0) {
+  if (iface_enabled) {
+    if (audio.currentTime - 1 < 0) {
     audio.currentTime = audio.duration - (1 - audio.currentTime);
-  }
-  else {
+    }
+    else {
     audio.currentTime -= 1;
+    }
   }
 }
 
@@ -363,28 +372,30 @@ function make_interface() {
   });
 
   Interface.layer.on('click', function(event) {
-    insert_key_combo = false;
-    if (navigator.appVersion.indexOf("Win") != -1 && event.evt.ctrlKey) {
-      insert_key_combo = true;
-    }
-    else if (event.evt.metaKey) {
-      insert_key_combo = true;
-    }
-
-    if (insert_key_combo) {
-      // insert new marker
-      let x = Interface.stage.getPointerPosition().x;
-      if ((x > Interface.line_begin) && (x < Interface.line_end)) {
-        let new_marker = add_marker(x);
-        let action = {
-          'type': 'add',
-          'id': new_marker.marker_id,
-          'at': x_to_time(x)
-        };
-        responses[sample_idx]['edit_history'].push(action);
+    if (iface_enabled) {
+      insert_key_combo = false;
+      if (navigator.appVersion.indexOf("Win") != -1 && event.evt.ctrlKey) {
+        insert_key_combo = true;
       }
-    } else {
-      // do nothing on normal click
+      else if (event.evt.metaKey) {
+        insert_key_combo = true;
+      }
+
+      if (insert_key_combo) {
+        // insert new marker
+        let x = Interface.stage.getPointerPosition().x;
+        if ((x > Interface.line_begin) && (x < Interface.line_end)) {
+          let new_marker = add_marker(x);
+          let action = {
+            'type': 'add',
+            'id': new_marker.marker_id,
+            'at': x_to_time(x)
+          };
+          responses[sample_idx]['edit_history'].push(action);
+        }
+      } else {
+        // do nothing on normal click
+      }
     }
   });
 
@@ -400,6 +411,7 @@ function bound(x) {
 }
 
 function add_marker_at_scrubber() {
+  if (iface_enabled) {
     let new_marker = add_marker(current_time_to_x());
     let action = {
       'type': 'add',
@@ -407,6 +419,7 @@ function add_marker_at_scrubber() {
       'at': x_to_time(new_marker.x())
     };
     responses[sample_idx]['edit_history'].push(action);
+  }
 }
 
 function add_marker(x_pos) {
