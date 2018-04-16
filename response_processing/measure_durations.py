@@ -15,7 +15,7 @@ def main():
     experiments = load_by_experiment(args.dumpfile)
 
     # print the information
-    print("number of trials, total time, mean time per trial, median trial time, stddev, (experiment id, time stamp)")
+    print("{:>8s}, {:>14s}, {:>7s}, {:>7s}, {:>6s}, {:>34s}, {:>26s}".format("# trials", "total time", "mean", "median", "stddev", "experiment id", "stamp"))
     for experiment_id, trials_by_experiment in experiments.items():
         total_time_s = 0
         trial_times = []
@@ -29,7 +29,7 @@ def main():
         total_time_formatted = str(datetime.timedelta(seconds=total_time_s))
         num_trials = len(trial_times)
         stamp = trials_by_experiment[0]["stamp"]
-        print("{:d} {:s} {: 5.3f} {: 5.3f} {: 5.3f} ({:s}, {:s})".format(num_trials, total_time_formatted, mean_time_s,
+        print("{:8d}, {:14s}, {:7.3f}, {:7.3f}, {:.3f}, {:34s}, {:26s}".format(num_trials, total_time_formatted, mean_time_s,
                                                                          median_time_s, deviation, experiment_id,
                                                                          stamp))
         if args.verbose:
