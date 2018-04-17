@@ -25,10 +25,10 @@ function Response() {
 }
 
 
-let instructions = ["After you read through all of these instructions, the interface below will be enabled. You will then press play to hear the clip. Listen to the clip as many times as you would like. (click OK)",
+let instructions = ["After you read through all of these instructions, the interface below will be enabled. You may then press play to hear the clip. Listen to the clip as many times as you would like. Click OK to read the next instruction.",
 "Indicate the beginning of a group, which may or may not occur simultaneously with an accented note, by placing a marker at the start of the group. Please be accurate in your placement of markers.",
 "Repeat these steps for each group that you perceive. Indicate less prominent groupings with the small circle (<code>alt + click</code>).",
-"When you are satisfied with your response, press 'Next'. This button will be disabled until you have placed one marker and spent at least 16 seconds on the task. You should spend 30 seconds to one minute on each clip.",
+"When you are satisfied with your response, press 'Next'. This button will be disabled until you have listened to the clip at least twice and placed one marker. Expect to spend at least 30 seconds on each clip.",
 "When you are finished with all the clips, the 'Submit' button will appear. Click the 'Submit' button to end the experiment.",
 ];
 
