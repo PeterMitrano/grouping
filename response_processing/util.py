@@ -51,12 +51,12 @@ def get_final_responses(experiments):
     :return:
     """
     final_responses = {}
-    for experiment_id, trials_by_experiment in experiments.items():
-        final_responses[experiment_id] = []
+    for key, trials_by_experiment in experiments.items():
+        final_responses[key] = []
         for trial in trials_by_experiment:
             final_response = [float(t['timestamp']) for t in trial['data']['final_response']]
             final_response = np.array(final_response)
-            final_responses[experiment_id].append(final_response)
+            final_responses[key].append(final_response)
     return final_responses
 
 

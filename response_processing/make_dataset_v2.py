@@ -1,48 +1,36 @@
 #!/usr/bin/env python3
 
 import os
-import json
-import sqlite3
 import numpy as np
 import argparse
+from urllib.parse import urlparse
 
 from madmom.custom_processors import LabelOutputProcessor
 from madmom.features.tf_beats import TfRhythmicGroupingPreProcessor
 from madmom.processors import _process, IOProcessor
 
 from interface.interface.interface import SAMPLES_URL_PREFIX
+from response_processing import util
 
 
 def main():
     parser = argparse.ArgumentParser("merges a csv of survey responses, and a sqlite3 database of responses.")
-    parser.add_argument('database', help='sqlite3 database file of survey responses downloaded from the server')
+    parser.add_argument("dumpfile", help="The output of \"flask dumpdb --outfile=dump.json\"")
     parser.add_argument('samples_folder', help='a folder with all the samples from the database')
     parser.add_argument('outfile', help='output file (EX: train_dataset.npz)')
     parser.add_argument('--fps', action='store', type=float, default=100, help='frames per second [default=100]')
 
     args = parser.parse_args()
 
-    # open the database
-    db = sqlite3.connect(args.database, detect_types=sqlite3.PARSE_DECLTYPES)
-    db.row_factory = sqlite3.Row
-
-    responses_cur = db.execute('SELECT url, data FROM responses')
-    entries = responses_cur.fetchall()
-
-    sample_responses_dict = {}
-    for entry in entries:
-        url = entry[0]
-        response = json.loads(entry[1])
-        name = url.strip(SAMPLES_URL_PREFIX)
-        group_times_s = [r['timestamp'] for r in response['final_response']]
-        if name not in sample_responses_dict:
-            sample_responses_dict[name] = []
-        sample_responses_dict[name].append(group_times_s)
+    responses_by_url = util.load_by_url(args.dumpfile)
+    final_responses_by_url = util.get_final_responses(responses_by_url)
 
     data = []
     labels = []
     sample_names = []
-    for sample_name, responses in sample_responses_dict.items():
+    for sample_url, final_responses in final_responses_by_url.items():
+        o = urlparse(sample_url)
+        sample_name = os.path.split(o.path)[-1]
         sample_path = os.path.join(args.samples_folder, sample_name)
         preprocessor = TfRhythmicGroupingPreProcessor()
         if not os.path.exists(sample_path):
@@ -50,7 +38,7 @@ def main():
 
         infile = open(sample_path, 'rb')
 
-        label_processor = LabelOutputProcessor(responses, args.fps)
+        label_processor = LabelOutputProcessor(final_responses, args.fps)
 
         # create an IOProcessor
         processor = IOProcessor(preprocessor, label_processor)

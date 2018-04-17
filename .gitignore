@@ -1,4 +1,5 @@
 .idea
+*.npz
 *.db
 *.json
 *.swp
