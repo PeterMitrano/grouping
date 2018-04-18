@@ -144,9 +144,16 @@ function squelch(e) {
 function pause_play(e) {
   if (iface_enabled) {
     if (audio.paused) {
-      audio.play();
+      console.log("play starting.");
+      let promise = audio.play();
+      if (promise !== undefined) {
+        promise.catch(function () {
+          audio.pause();
+        });
+      }
     }
     else {
+      console.log("attempting pause...");
       audio.pause();
     }
   }
@@ -166,8 +173,13 @@ setInterval(function() {
 }, 100);
 
 function current_time_to_x() {
-  return Interface.line_begin + audio.currentTime / audio.duration *
-      (Interface.line_end - Interface.line_begin);
+  if (isFinite(audio.currentTime)) {
+    return Interface.line_begin + audio.currentTime / audio.duration *
+        (Interface.line_end - Interface.line_begin);
+  }
+  else {
+    return Interface.line_begin;
+  }
 }
 
 function x_to_time(x) {
@@ -193,11 +205,13 @@ audio.addEventListener('pause', function() {
 
 function scrub_back() {
   if (iface_enabled) {
-    if (audio.currentTime - 1 < 0) {
-      audio.currentTime = audio.duration - (1 - audio.currentTime);
-    }
-    else {
-      audio.currentTime -= 1;
+    if (isFinite(audio.currentTime)) {
+      if (audio.currentTime - 1 < 0) {
+        audio.currentTime = audio.duration - (1 - audio.currentTime);
+      }
+      else {
+        audio.currentTime -= 1;
+      }
     }
   }
 }
@@ -264,6 +278,7 @@ function next_submit() {
     // load the next sample
     sample_idx += 1;
     audio_src.src = samples[sample_idx]['url'];
+    console.log("loading.");
     audio.load();
 
     // create response object for new trial
