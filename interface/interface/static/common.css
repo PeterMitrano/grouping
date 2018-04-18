@@ -27,6 +27,10 @@ audio {
     font-size: 12pt;
 }
 
+#instruction {
+    padding: 8px;
+}
+
 #controls {
     font-size: 12pt;
 }

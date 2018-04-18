@@ -24,15 +24,35 @@ function Response() {
   };
 }
 
-
-let instructions = ["After you read through all of these instructions, the interface below will be enabled. You may then press play to hear the clip. Listen to the clip as many times as you would like. Click OK to read the next instruction.",
-"Indicate the beginning of a group, which may or may not occur simultaneously with an accented note, by placing a marker at the start of the group. Please be accurate in your placement of markers.",
-"Repeat these steps for each group that you perceive. Indicate less prominent groupings with the small circle (<code>alt + click</code>).",
-"When you are satisfied with your response, press 'Next'. This button will be disabled until you have listened to the clip at least twice and placed one marker. Expect to spend at least 30 seconds on each clip.",
-"When you are finished with all the clips, the 'Submit' button will appear. Click the 'Submit' button to end the experiment.",
+let instructions = [
+  'After you read through all of these instructions, the interface below will be enabled. \
+      You may then press play to hear the clip. Listen to the clip as many times as you would like. \
+      Click the right arrow to read the next instruction.',
+  'Indicate the beginning of a group, \
+      which may or may not occur simultaneously with an accented note, \
+      by placing a marker at the start of the group. Please be accurate in your placement of markers.',
+  'Repeat these steps for each group that you perceive. \
+      Indicate less prominent groupings with the small circle (<code>alt + click</code>).',
+  'When you are satisfied with your response, press \'Next\'. \
+      This button will be disabled until you have listened to the clip \
+      at least twice and placed one marker. Expect to spend at least 30 seconds on each clip.',
+  'When you are finished with all the clips, the \'Submit\' button will appear. \
+      Click the \'Submit\' button to end the experiment.',
 ];
 
-let final_instruction = "First, press play to hear the clip. Listen to the clip as many times as you would like. Indicate the beginning of a group, which may or may not occur simultaneously with an accented note, by placing a marker at the start of the group. Please be accurate in your placement of markers. Repeat these steps for each group that you perceive. Indicate less prominent groupings with the small circle. When you are satisfied with your response, press 'Next'. This button will be disabled until you have placed one marker and spent at least 16 seconds on the task. You should spend 30 seconds to one minute on each clip. When you are finished with all the clips, the 'Submit' button will appear. Click the 'Submit' button to end the experiment.";
+let final_instruction = 'First, press play to hear the clip. \
+                         Listen to the clip as many times as you would like. \
+                         Indicate the beginning of a group, \
+                         by placing a marker at the start of the group. \
+                         Please be accurate in your placement of markers. \
+                         Repeat these steps for each group that you perceive. \
+                         Indicate less prominent groupings with the small circle. \
+                         When you are satisfied with your response, press \'Next\'. \
+                         This button will be disabled until you have listened to the clip twice \
+                         and placed one marker. \
+                         You should spend 30 seconds to one minute on each clip. \
+                         When you are finished, the \'Submit\' button will appear. \
+                         Click the \'Submit\' button to end the experiment.';
 let instruction_idx = 0;
 
 /////////////////////////////////////////////////////////
@@ -53,29 +73,44 @@ window.onload = function() {
   make_interface();
 
   // update progress indicator
-  $("#progress_indicator").html("Sample " + (sample_idx+1) + "/" + samples.length);
+  $('#progress_indicator').html('Sample ' + (sample_idx + 1) + '/' + samples.length);
 
- $("#instruction").html(instructions[0]);
- $("#pause_play_button").prop('disabled', true);
- iface_enabled = false;
+  $('#prev_instruction').css('visibility', 'hidden');
+  $('#instruction').html(instructions[0]);
+  $('#pause_play_button').prop('disabled', true);
+  iface_enabled = false;
 };
 
-function next_instruction() {
- instruction_idx += 1;
+function prev_instruction() {
+  if (instruction_idx > 0) {
+    instruction_idx -= 1;
+  }
 
- if (instruction_idx === instructions.length) {
-   show_interface();
-   $('#next_instruction').hide();
-   $("#instruction").html(final_instruction);
-   $("#pause_play_button").prop('disabled', false);
-   iface_enabled = true;
- }
- else {
-     if (instruction_idx === instructions.length - 1) {
-       $('#next_instruction').html("Begin First Trial");
-     }
-   $("#instruction").html(instructions[instruction_idx]);
- }
+  if (instruction_idx === 0) {
+    $('#prev_instruction').css('visibility', 'hidden');
+  }
+
+  $('#instruction').html(instructions[instruction_idx]);
+}
+
+function next_instruction() {
+  instruction_idx += 1;
+
+  if (instruction_idx === instructions.length) {
+    show_interface();
+    $('#next_instruction').hide();
+    $('#prev_instruction').hide();
+    $('#instruction').html(final_instruction);
+    $('#pause_play_button').prop('disabled', false);
+    iface_enabled = true;
+  }
+  else {
+    if (instruction_idx === instructions.length - 1) {
+      $('#next_instruction').html('Begin First Trial');
+    }
+    $('#instruction').html(instructions[instruction_idx]);
+    $('#prev_instruction').css('visibility', 'visible');
+  }
 }
 
 function show_interface() {
@@ -88,11 +123,10 @@ function show_interface() {
 /////////////////////////////////////////////////////////
 // Keyboard Shortcuts
 /////////////////////////////////////////////////////////
-Mousetrap.bind('a', pause_play);
 Mousetrap.bind('space', pause_play);
 Mousetrap.bind('space', squelch, 'keyup');
-Mousetrap.bind('s', add_marker_at_scrubber);
-Mousetrap.bind('d', scrub_back);
+Mousetrap.bind('a', add_marker_at_scrubber);
+Mousetrap.bind('s', scrub_back);
 
 /////////////////////////////////////////////////////////
 // Audio Player
@@ -110,10 +144,10 @@ function squelch(e) {
 function pause_play(e) {
   if (iface_enabled) {
     if (audio.paused) {
-    audio.play();
+      audio.play();
     }
     else {
-    audio.pause();
+      audio.pause();
     }
   }
 }
@@ -160,10 +194,10 @@ audio.addEventListener('pause', function() {
 function scrub_back() {
   if (iface_enabled) {
     if (audio.currentTime - 1 < 0) {
-    audio.currentTime = audio.duration - (1 - audio.currentTime);
+      audio.currentTime = audio.duration - (1 - audio.currentTime);
     }
     else {
-    audio.currentTime -= 1;
+      audio.currentTime -= 1;
     }
   }
 }
@@ -207,8 +241,7 @@ function next_submit() {
 
   // HTTP POST to server
   let request = new XMLHttpRequest();
-  let metadata = {
-  };
+  let metadata = {};
   let post_data = {
     'metadata': metadata,
     'experiment_id': experiment_id,
@@ -237,7 +270,7 @@ function next_submit() {
     responses[sample_idx] = Response();
 
     // update progress indicator
-    $("#progress_indicator").html("Sample " + (sample_idx+1) + "/" + samples.length);
+    $('#progress_indicator').html('Sample ' + (sample_idx + 1) + '/' + samples.length);
 
     // change next button to submit button if it's the last sample
     if (sample_idx === samples.length - 1) {
@@ -323,7 +356,7 @@ function make_interface() {
     let action = {
       'type': 'drag',
       'id': this.marker_id,
-      'to': x_to_time(this.x())
+      'to': x_to_time(this.x()),
     };
     responses[sample_idx]['edit_history'].push(action);
   });
@@ -374,7 +407,7 @@ function make_interface() {
   Interface.layer.on('click', function(event) {
     if (iface_enabled) {
       insert_key_combo = false;
-      if (navigator.appVersion.indexOf("Win") != -1 && event.evt.ctrlKey) {
+      if (navigator.appVersion.indexOf('Win') != -1 && event.evt.ctrlKey) {
         insert_key_combo = true;
       }
       else if (event.evt.metaKey) {
@@ -389,7 +422,7 @@ function make_interface() {
           let action = {
             'type': 'add',
             'id': new_marker.marker_id,
-            'at': x_to_time(x)
+            'at': x_to_time(x),
           };
           responses[sample_idx]['edit_history'].push(action);
         }
@@ -416,7 +449,7 @@ function add_marker_at_scrubber() {
     let action = {
       'type': 'add',
       'id': new_marker.marker_id,
-      'at': x_to_time(new_marker.x())
+      'at': x_to_time(new_marker.x()),
     };
     responses[sample_idx]['edit_history'].push(action);
   }
@@ -437,8 +470,8 @@ function add_marker(x_pos) {
 function check_disable_button() {
   let trial_duration_ms = 0;
   if (trial_start_time) {
-      let now = new Date();
-      trial_duration_ms = (now.getTime() - trial_start_time.getTime());
+    let now = new Date();
+    trial_duration_ms = (now.getTime() - trial_start_time.getTime());
   }
   if ((Interface.loaded && Interface.markers.length == 0) || trial_duration_ms < 16000) {
     $('#next-submit-button').prop('disabled', true);

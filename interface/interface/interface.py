@@ -11,7 +11,7 @@ from datetime import datetime
 import click
 import requests
 from colorama import init, Fore, Style
-from flask import Flask, render_template, g, request, Response, url_for, redirect
+from flask import Flask, render_template, g, request, Response, url_for, redirect, make_response
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -478,8 +478,9 @@ def interface():
         # randomly sample according to a power distribution--samples with fewer weights are more likely to be chosen
         urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
         samples = [{'url': e[0]} for e in urls_for_new_experiment]
-        return render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id,
-                               next_href=href)
+        response = make_response(render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href))
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
 
 
 if __name__ == '__main__':
