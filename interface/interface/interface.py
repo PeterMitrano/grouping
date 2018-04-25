@@ -186,7 +186,7 @@ def dump_db(outfile_name):
         print("=" * w)
 
     def print_response_db():
-        responses_cur = db.execute('SELECT id, url, stamp, experiment_id, data FROM responses ORDER BY stamp DESC')
+        responses_cur = db.execute('SELECT id, url, stamp, experiment_id, metadata, data FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
         json_out = []
@@ -196,7 +196,8 @@ def dump_db(outfile_name):
         headers['url'] = 20
         headers['stamp'] = 27
         headers['experiment_id'] = 13
-        term_size = shutil.get_terminal_size((100, 20))
+        headers['metadata'] = 20
+        term_size = shutil.get_terminal_size((120, 20))
         total_width = term_size.columns
         headers['data'] = max(total_width - sum(headers.values()) - len(headers), 0)
         fmt = ""
@@ -207,13 +208,14 @@ def dump_db(outfile_name):
         print("=" * total_width)
         print(header)
         for entry in entries:
-            response = json.loads(entry[4])
+            response = json.loads(entry[5])
             json_out.append({
                 'id': entry[0],
                 'url': entry[1],
                 'stamp': str(entry[2]),
                 'experiment_id': entry[3],
-                'data': response
+                'metadata': json.loads(entry[4]),
+                'data': response,
             })
             cols = [str(col) for col in entry]
             cols[1] = cols[1][len(SAMPLES_URL_PREFIX):]
@@ -225,11 +227,11 @@ def dump_db(outfile_name):
                     break
                 data += s
             if len(data) == 1:
-                cols[-1] = data + "]"
+                cols[5] = data + "]"
             else:
-                cols[-1] = data[:-2] + "]"
-            if len(cols[3]) > headers['experiment_id']:
-                cols[3] = cols[3][0:headers['experiment_id'] - 3] + '...'
+                cols[5] = data[:-2] + "]"
+            if len(cols[5]) > headers['data']:
+                cols[5] = cols[5][0:headers['data'] - 3] + '...'
             print(fmt.format(*cols))
         print("=" * total_width)
 
@@ -324,6 +326,15 @@ def responses():
     db.commit()
 
     # submit the answers to mechanical turk if necessary as well
+    # url = "https://www.mturk.com/mturk/externalSubmit"
+    url = "https://workersandbox.mturk.com/mturk/externalSubmit"
+    body = {
+        'assignmentId': metadata['assignment_id'],
+        'data': sample_response
+    }
+    r = requests.post(url, data=body)
+    if not r.ok:
+        print(r.text)
 
     data = {'status': 'ok'}
     js = json.dumps(data)
@@ -478,7 +489,7 @@ def interface():
         # randomly sample according to a power distribution--samples with fewer weights are more likely to be chosen
         urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
         samples = [{'url': e[0]} for e in urls_for_new_experiment]
-        response = make_response(render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href))
+        response = make_response(render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href, assignment_id=assignment_id))
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         return response
 

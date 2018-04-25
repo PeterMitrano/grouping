@@ -123,8 +123,8 @@ function show_interface() {
 /////////////////////////////////////////////////////////
 // Keyboard Shortcuts
 /////////////////////////////////////////////////////////
-Mousetrap.bind('space', pause_play);
 Mousetrap.bind('space', squelch, 'keyup');
+Mousetrap.bind('space', pause_play);
 Mousetrap.bind('a', add_marker_at_scrubber);
 Mousetrap.bind('s', scrub_back);
 
@@ -255,7 +255,7 @@ function next_submit() {
 
   // HTTP POST to server
   let request = new XMLHttpRequest();
-  let metadata = {};
+  let metadata = {'assignment_id': assignment_id};
   let post_data = {
     'metadata': metadata,
     'experiment_id': experiment_id,

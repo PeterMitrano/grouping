@@ -33,6 +33,7 @@ def main():
                                                                          median_time_s, deviation, experiment_id,
                                                                          stamp))
         if args.verbose:
+            print("total experiments:", len(trials_by_experiment))
             for trial in trials_by_experiment:
                 trial_time_s = float(trial["data"]["duration_seconds"])
                 trial_time_formatted = str(datetime.timedelta(seconds=trial_time_s))
