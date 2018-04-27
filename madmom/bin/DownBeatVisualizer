@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from time import time
+import numpy as np
 import tkinter as tk
 import argparse
 import pyaudio
@@ -34,7 +35,7 @@ class Application(tk.Frame):
         def _revert():
             self.canvas.itemconfig(self.downbeat_oval_id, fill='red')
 
-        self.after(200, _revert)
+        self.after(10, _revert)
 
     def blink_beat(self):
         self.canvas.itemconfig(self.beat_oval_id, fill='white')
@@ -43,20 +44,17 @@ class Application(tk.Frame):
         def _revert():
             self.canvas.itemconfig(self.beat_oval_id, fill='black')
 
-        self.after(200, _revert)
+        self.after(10, _revert)
 
 
+j = 0
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('wav', help='input *.wav file')
     parser.add_argument('beats', help='input *.beats.txt file. This should be the output of DBNDownBeatTracker')
     args = parser.parse_args()
 
-    beats_file = open(args.beats, 'r')
-    beats = []
-    for line in beats_file.readlines():
-        t, b = line.strip('\r\n').split('\t')
-        beats.append((float(t), int(b)))
+    beats = np.genfromtxt(args.beats)
 
     wav_file = wave.open(args.wav, 'rb')
 
@@ -75,6 +73,7 @@ def main():
     t0 = time()
 
     def play_audio():
+        global j
         # read data (based on the chunk size)
         chunk = 1024
         data = wav_file.readframes(chunk)
@@ -84,12 +83,12 @@ def main():
             # writing to the stream is what *actually* plays the sound.
             stream.write(data)
             dt = time() - t0
-            if dt >= beats[0][0]:
-                if beats[0][1] == 1:
+            if dt >= beats[j]:
+                if len(beats.shape) == 2 and beats[j, 1] == 1:
                     app.blink_downbeat()
                 else:
                     app.blink_beat()
-                beats.pop(0)
+                j += 1
 
             app.after(1, play_audio)
 
