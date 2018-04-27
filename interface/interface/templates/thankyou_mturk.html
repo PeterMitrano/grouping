@@ -22,7 +22,8 @@
         <form name='mturk_form' method='post' id='mturk_form' action='https://www.mturk.com/mturk/externalSubmit'>
           <input type='hidden' value='{{assignment_id}}' name='assignmentId' id='assignmentId'/>
           <input type='hidden' value='{{experiment_id}}' name='experimentId' id='experimentId'/>
-          <p> Please paste your MTurk ID below to receive approval and payment.</p>
+          <p> Please paste your MTurk Worker ID below to receive approval and payment.</p>
+          <input type='text' name='turker_id' placeholder='Worker ID'>
           <input type='submit' id='submitButton' value='Submit' />
         </form>
       </div>
