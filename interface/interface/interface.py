@@ -286,7 +286,9 @@ def sample_new_urls(entries, samples_per_participant):
     a = 10
     sample_indeces = []
     while True:
-        idx = int(np.random.power(a) * entries.shape[0])
+        # max_index = entries.shape[0]
+        max_index = 15
+        idx = int(np.random.power(a) * max_index)
         if idx not in sample_indeces:
             sample_indeces.append(idx)
         if len(sample_indeces) == samples_per_participant:
