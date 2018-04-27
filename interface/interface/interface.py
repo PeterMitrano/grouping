@@ -329,14 +329,6 @@ def responses():
 
     # submit the answers to mechanical turk if necessary as well
     # url = "https://www.mturk.com/mturk/externalSubmit"
-    url = "https://workersandbox.mturk.com/mturk/externalSubmit"
-    body = {
-        'assignmentId': metadata['assignment_id'],
-        'data': sample_response
-    }
-    r = requests.post(url, data=body)
-    if not r.ok:
-        print(r.text)
 
     data = {'status': 'ok'}
     js = json.dumps(data)
@@ -359,6 +351,7 @@ def survey():
 def welcome():
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
     assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+
     # lol this is such good code...
     random_numbers = [np.random.randint(0, 255) for _ in range(9)]
     experiment_id = "{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}".format(*random_numbers)
@@ -372,9 +365,7 @@ def welcome():
 def thank_you_mturk():
     assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
     experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
-    submit_url = "https://workersandbox.mturk.com/mturk/externalSubmit?assignmentId={:s}&experimentId={:s}".format(
-        assignment_id, experiment_id)
-    return render_template('thankyou_mturk.html', submit_url=submit_url)
+    return render_template('thankyou_mturk.html', assignment_id=assignment_id, experiment_id=experiment_id)
 
 
 @app.route('/thankyou', methods=['GET'])
@@ -466,6 +457,7 @@ def manage_get():
 @app.route('/', methods=['GET'])
 def root():
     assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+
     return redirect(url_for('welcome', assignmentId=assignmentId))
 
 
