@@ -454,6 +454,10 @@ def manage_get():
         return render_template('error.html', reason="Failed to contact sever for list of samples.")
 
 
+@app.route('/wpi_participant_pool', methods=['GET'])
+def wpi_participant_pool():
+    return render_template('wpi_participant_pool.html')
+
 @app.route('/', methods=['GET'])
 def root():
     assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
