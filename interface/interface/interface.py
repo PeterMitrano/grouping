@@ -286,9 +286,7 @@ def sample_new_urls(entries, samples_per_participant):
     a = 10
     sample_indeces = []
     while True:
-        # max_index = entries.shape[0]
-        max_index = 15
-        idx = int(np.random.power(a) * max_index)
+        idx = int(np.random.power(a) * entries.shape[0])
         if idx not in sample_indeces:
             sample_indeces.append(idx)
         if len(sample_indeces) == samples_per_participant:
@@ -468,7 +466,8 @@ def root():
 @app.route('/interface', methods=['GET'])
 def interface():
     db = get_db()
-    cur = db.execute('SELECT url, count FROM samples ORDER BY count DESC')
+    # cur = db.execute('SELECT url, count FROM samples ORDER BY count DESC')
+    cur = db.execute('SELECT url, count FROM samples')
     entries = np.array(cur.fetchall())
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
     assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
@@ -485,7 +484,8 @@ def interface():
         return render_template('error.html', reason='Not samples available for response.')
     else:
         # randomly sample according to a power distribution--samples with fewer weights are more likely to be chosen
-        urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
+        # urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
+        urls_for_new_experiment = entries[:samples_per_participant]
         samples = [{'url': e[0]} for e in urls_for_new_experiment]
         response = make_response(render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href, assignment_id=assignment_id))
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
