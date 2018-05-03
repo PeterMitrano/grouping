@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+from time import sleep
 import sys
+from pprint import pprint
+
 import boto3
 
 
@@ -47,9 +50,10 @@ def main():
                   'version: {:d}.{:d}'.format(major_version, minor_version)
 
     # Create the HIT
+    lifetime = 240  # int(3*60*60*24)
     response = client.create_hit(
         MaxAssignments=1,
-        LifetimeInSeconds=2*60*60,  # amount of time that can elapse between creation and acceptance of the HIT
+        LifetimeInSeconds=lifetime,  # amount of time that can elapse between creation and acceptance of the HIT
         AssignmentDurationInSeconds=15*3*60,  # amount of time they can work on the HIT for
         Reward=mturk_environment['reward'],
         Title='Annotate Groupings in Music Clips',
@@ -57,8 +61,12 @@ def main():
         Description=description,
         Question=question_xml,
         QualificationRequirements=worker_requirements,
-        AutoApprovalDelayInSeconds=24*60*60,  # gives us 24 hours to reject a response
+        AutoApprovalDelayInSeconds=60*60*24,  # the time we get to reject a response
     )
+
+    # wait for it to be posted
+    print("waiting 10s for HIT to become available...")
+    sleep(10)
 
     # The response included several fields that will be helpful later
     hit_type_id = response['HIT']['HITTypeId']
@@ -70,6 +78,13 @@ def main():
 
     print("\nAnd see results here:")
     print(mturk_environment['manage'])
+
+    while True:
+        c = input("press enter to poll results")
+        if c == 'q':
+            break
+        results = client.list_assignments_for_hit(HITId=hit_id, AssignmentStatuses=['Submitted'])
+        pprint(results)
 
     return 0
 
