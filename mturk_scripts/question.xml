@@ -1,4 +1,4 @@
 <ExternalQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/ExternalQuestion.xsd">
-  <ExternalURL>https://mprlab.wpi.edu/thankyou_mturk?</ExternalURL>
+  <ExternalURL>https://mprlab.wpi.edu</ExternalURL>
   <FrameHeight>800</FrameHeight>
 </ExternalQuestion>
