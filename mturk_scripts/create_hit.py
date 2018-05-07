@@ -11,7 +11,7 @@ import boto3
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('question_xml_filename',  help='XML file containing the details of the ExternalQuestion')
-    parser.add_argument('--profile_name', '-p', default='mturk', help='profile name in ~/.aws/credentials file')
+    parser.add_argument('--profile_name', '-p', default='mturk_peter', help='profile name in ~/.aws/credentials file')
     parser.add_argument('--live', '-l', help="set true to post real hits instead of sandbox hits", action="store_true")
     args = parser.parse_args()
 
