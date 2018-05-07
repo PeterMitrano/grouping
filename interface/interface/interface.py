@@ -337,7 +337,7 @@ def responses():
 @app.route('/survey', methods=['GET'])
 def survey():
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
     experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
     href = "interface?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
                                                                                              samples_per_participant,
@@ -348,27 +348,27 @@ def survey():
 @app.route('/welcome', methods=['GET'])
 def welcome():
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
 
     # lol this is such good code...
     random_numbers = [np.random.randint(0, 255) for _ in range(9)]
     experiment_id = "{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}".format(*random_numbers)
     href = "survey?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
                                                                                           samples_per_participant,
-                                                                                          assignmentId)
-    return render_template('welcome.html', next_href=href)
+                                                                                          assignment_id)
+    return render_template('welcome.html', next_href=href, assignment_id=assignment_id)
 
 
 @app.route('/thankyou_mturk', methods=['GET'])
 def thank_you_mturk():
-    assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
     experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
     return render_template('thankyou_mturk.html', assignment_id=assignment_id, experiment_id=experiment_id)
 
 
 @app.route('/thankyou', methods=['GET'])
 def thank_you():
-    assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
     return render_template('thankyou.html', assignmentId=assignment_id)
 
 
@@ -458,7 +458,7 @@ def wpi_participant_pool():
 
 @app.route('/', methods=['GET'])
 def root():
-    assignmentId = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    assignmentId = request.args.get('assignmentId', "NOT_MTURK")
 
     return redirect(url_for('welcome', assignmentId=assignmentId))
 
@@ -470,10 +470,10 @@ def interface():
     cur = db.execute('SELECT url, count FROM samples')
     entries = np.array(cur.fetchall())
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignment_id = request.args.get('assignmentId', "ASSIGNMENT_ID_NOT_AVAILABLE")
+    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
     experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
 
-    if assignment_id and assignment_id != "ASSIGNMENT_ID_NOT_AVAILABLE":
+    if assignment_id and assignment_id != "NOT_MTURK":
         href = "thankyou_mturk?assignmentId={:s}&experimentId={:s}".format(assignment_id, experiment_id)
     else:
         href = "thankyou?"
