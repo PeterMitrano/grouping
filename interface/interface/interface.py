@@ -195,7 +195,7 @@ def dump_db(outfile_name):
         headers['id'] = 3
         headers['url'] = 20
         headers['stamp'] = 27
-        headers['experiment_id'] = 13
+        headers['experiment_id'] = 34
         headers['metadata'] = 20
         term_size = shutil.get_terminal_size((120, 20))
         total_width = term_size.columns
