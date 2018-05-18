@@ -20,7 +20,7 @@
     <button id="copy_to_clipboard" class="btn btn-default" onclick="copyToClipboard(experiment_id)">Copy
       <span class="fa fa-copy"></span>
     </button>
-    <a id="continue_button" class="btn btn-default pull-right" href="{{next_href}}">Continue</a>
+    <button id="continue_button" class="btn btn-default pull-right" onclick="location.href='{{next_href}}';">Continue</button>
     <br>
   </div>
 </div>
@@ -33,11 +33,9 @@
 </body>
 <script>
   let b = $('#continue_button');
-  window.onload = function() {
-    b.attr('disabled', true);
-  };
+  b.prop("disabled", true);
   window.setTimeout(function() {
-    b.attr('disabled', false);
+    b.prop("disabled", false);
   }, 30000);
 </script>
 </html>
