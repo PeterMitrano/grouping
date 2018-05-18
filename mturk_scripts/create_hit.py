@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--num-hits', '-n', help="number of hits assignments to create", default=1, type=int)
     args = parser.parse_args()
 
-    create_hits_in_live = False
+    create_hits_in_live = args.live
 
     environments = {
         "live": {

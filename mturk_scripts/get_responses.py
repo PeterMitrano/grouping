@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--status', '-s', help="status", default='Submitted')
     args = parser.parse_args()
 
-    create_hits_in_live = False
+    create_hits_in_live = args.live
 
     environments = {
         "live": {
