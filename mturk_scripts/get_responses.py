@@ -5,6 +5,7 @@ import sys
 from pprint import pprint
 
 import boto3
+import botocore
 
 
 def main():
@@ -36,8 +37,11 @@ def main():
     session = boto3.Session(profile_name=args.profile_name)
     client = session.client(service_name='mturk', region_name='us-east-1', endpoint_url=mturk_environment['endpoint'])
 
-    results = client.list_assignments_for_hit(HITId=args.hit_id, AssignmentStatuses=[args.status])
-    pprint(results)
+    try:
+        results = client.list_assignments_for_hit(HITId=args.hit_id, AssignmentStatuses=[args.status])
+        pprint(results)
+    except botocore.exceptions.ClientError as e:
+        print(e)
 
     return 0
 
