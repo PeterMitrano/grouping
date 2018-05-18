@@ -16,18 +16,19 @@ def main():
     responses_by_url = load_by_url(args.dumpfile)
 
     for url, trials in responses_by_url.items():
-        for i, trial in enumerate(trials):
-            final_response = [float(t['timestamp']) for t in trial['data']['final_response']]
-
-            if len(final_response) == 1:
-                print(trial['experiment_id'])
-
+        if len(trials) > 9:
             plt.figure()
             plt.title(url)
             plt.xlabel('time (seconds')
             plt.ylabel('response')
-            ys = np.ones(len(final_response)) * i
-            plt.scatter(final_response, ys)
+            for i, trial in enumerate(trials):
+                final_response = [float(t['timestamp']) for t in trial['data']['final_response']]
+
+                if len(final_response) == 1:
+                    print(trial['experiment_id'])
+
+                ys = np.ones(len(final_response)) * i
+                plt.scatter(final_response, ys)
 
     plt.show()
 
