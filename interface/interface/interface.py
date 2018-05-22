@@ -32,12 +32,20 @@ APP_STATIC = os.path.join(APP_ROOT, 'static')
 
 @app.cli.command('dumpdb')
 @click.option('--outfile', help="name for output file containing the responses database", type=click.Path())
-def dumpdb_command(outfile):
+@click.argument('database', default=None)
+def dumpdb_command(outfile, database):
     """ Print the database (can save to CSV) """
-    dump_db(outfile)
+    dump_db(outfile, database)
 
 
-@app.cli.command('remove')
+@app.cli.command('remove_experiment')
+@click.argument('experiment_id')
+@click.argument('database', default=None)
+def remove_command(experiment_id, database):
+    remove_experiment(experiment_id, database)
+
+
+@app.cli.command('remove_sample')
 @click.argument('sample_name')
 @click.option('--force/--no-force', help='force remove something even if it has responses', default=False)
 def remove_command(sample_name, force):
@@ -63,19 +71,24 @@ def initdb_command():
         dump_db(False)
 
 
-def connect_db():
+def connect_db(alternate_db_path=None):
     """Connects to the specific database."""
-    rv = sqlite3.connect(app.config['DATABASE'], detect_types=sqlite3.PARSE_DECLTYPES)
+    if alternate_db_path is None:
+        rv = sqlite3.connect(app.config['DATABASE'], detect_types=sqlite3.PARSE_DECLTYPES)
+    else:
+        rv = sqlite3.connect(alternate_db_path, detect_types=sqlite3.PARSE_DECLTYPES)
+
     rv.row_factory = sqlite3.Row
+
     return rv
 
 
-def get_db():
+def get_db(alternate_db_path=None):
     """Opens a new database connection if there is none yet for the
     current application context.
     """
     if not hasattr(g, 'sqlite_db'):
-        g.sqlite_db = connect_db()
+        g.sqlite_db = connect_db(alternate_db_path)
     return g.sqlite_db
 
 
@@ -149,11 +162,11 @@ def load(directory):
     return True
 
 
-def dump_db(outfile_name):
+def dump_db(outfile_name, database):
     # for pretty terminal output
     init()
 
-    db = get_db()
+    db = get_db(database)
 
     if outfile_name:
         outfile = open(outfile_name, 'w')
@@ -186,7 +199,8 @@ def dump_db(outfile_name):
         print("=" * w)
 
     def print_response_db():
-        responses_cur = db.execute('SELECT id, url, stamp, experiment_id, metadata, data FROM responses ORDER BY stamp DESC')
+        responses_cur = db.execute(
+            'SELECT id, url, stamp, experiment_id, metadata, data FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
         json_out = []
@@ -239,6 +253,50 @@ def dump_db(outfile_name):
 
     print_samples_db()
     print_response_db()
+
+
+def remove_experiment(experiment_id, database):
+    db = get_db(database)
+    try:
+        check_cur = db.execute('SELECT id, stamp, metadata FROM responses WHERE experiment_id=?', [experiment_id])
+        check_responses = check_cur.fetchall()
+        if check_responses is None or len(check_responses) == 0:
+            print(Fore.YELLOW, end='')
+            print("experiment with id ", experiment_id, "does not exist.")
+            print(Fore.YELLOW, end='')
+            return
+        else:
+            for response in check_responses:
+                id = response[0]
+                stamp = response[1]
+                metadata = response[2]
+                assignment_id = json.loads(metadata).get('assignment_id', 'ASSIGNMENT_ID_MISSING')
+
+                k = input("confirm stamp should be " + str(stamp) + "? ")
+                if k != 'Y' and k != 'y':
+                    print("skipping...")
+                    continue
+                k = input("confirm assignment ID should be {:s}? ".format(assignment_id))
+                if k != 'Y' and k != 'y':
+                    print("skipping...")
+                    continue
+
+                remove_cur = db.execute('DELETE FROM responses WHERE id=?', [id])
+
+                if remove_cur.rowcount == 1:
+                    print(Fore.BLUE, end='')
+                    print("Removed {:d} experiments with id {:s}".format(remove_cur.rowcount, experiment_id))
+                    print(Fore.RESET, end='')
+                else:
+                    print(Fore.YELLOW, end='')
+                    print("Failed to remove", experiment_id, ". Try again, this might be a race condition.")
+                    print(Fore.RESET, end='')
+    except sqlite3.IntegrityError as e:
+        print(Fore.RED, end='')
+        print(e)
+        print(Fore.RESET, end='')
+
+    db.commit()
 
 
 def remove_from_sample_db(sample, force=False):
@@ -456,6 +514,7 @@ def manage_get():
 def wpi_participant_pool():
     return render_template('wpi_participant_pool.html')
 
+
 @app.route('/', methods=['GET'])
 def root():
     assignmentId = request.args.get('assignmentId', "NOT_MTURK")
@@ -487,7 +546,9 @@ def interface():
         # urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
         urls_for_new_experiment = entries[:samples_per_participant]
         samples = [{'url': e[0]} for e in urls_for_new_experiment]
-        response = make_response(render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href, assignment_id=assignment_id))
+        response = make_response(
+            render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href,
+                            assignment_id=assignment_id))
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         return response
 
