@@ -35,12 +35,23 @@ def main():
     mturk_environment = environments["live"] if create_hits_in_live else environments["sandbox"]
 
     # restrict to mturk workers that have 80% hit accept rate
-    worker_requirements = [{
-        'QualificationTypeId': '000000000000000000L0',
-        'Comparator': 'GreaterThanOrEqualTo',
-        'IntegerValues': [80],
-        'RequiredToPreview': True,
-    }]
+    worker_requirements = [
+        {
+            'QualificationTypeId': '000000000000000000L0',
+            'Comparator': 'GreaterThanOrEqualTo',
+            'IntegerValues': [80],
+            'RequiredToPreview': True,
+        },
+        {
+            'QualificationTypeId': '00000000000000000071',
+            'Comparator': 'EqualTo',
+            'LocaleValues': [
+                {
+                    'Country': 'US'
+                },
+            ],
+        },
+    ]
 
     session = boto3.Session(profile_name=args.profile_name)
     client = session.client(service_name='mturk', region_name='us-east-1', endpoint_url=mturk_environment['endpoint'])

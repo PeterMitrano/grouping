@@ -14,7 +14,7 @@ def main():
     parser.add_argument('--live', '-l', help="set true to post real hits instead of sandbox hits", action="store_true")
     args = parser.parse_args()
 
-    create_hits_in_live = False
+    create_hits_in_live = args.live
 
     environments = {
         "live": {
