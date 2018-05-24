@@ -32,7 +32,7 @@ APP_STATIC = os.path.join(APP_ROOT, 'static')
 
 @app.cli.command('dumpdb')
 @click.option('--outfile', help="name for output file containing the responses database", type=click.Path())
-@click.argument('database', default=None)
+@click.option('--database', help='database file to use, a *.db file', default=None)
 def dumpdb_command(outfile, database):
     """ Print the database (can save to CSV) """
     dump_db(outfile, database)
@@ -40,7 +40,7 @@ def dumpdb_command(outfile, database):
 
 @app.cli.command('remove_experiment')
 @click.argument('experiment_id')
-@click.argument('database', default=None)
+@click.option('--database', help='database file to use, a *.db file', default=None)
 def remove_command(experiment_id, database):
     remove_experiment(experiment_id, database)
 
