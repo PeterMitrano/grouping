@@ -203,7 +203,7 @@ def dump_db(outfile_name, database):
             'SELECT id, url, stamp, experiment_id, metadata, data FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
-        json_out = []
+        responses = []
 
         headers = OrderedDict()
         headers['id'] = 3
@@ -223,7 +223,7 @@ def dump_db(outfile_name, database):
         print(header)
         for entry in entries:
             response = json.loads(entry[5])
-            json_out.append({
+            responses.append({
                 'id': entry[0],
                 'url': entry[1],
                 'stamp': str(entry[2]),
@@ -249,6 +249,7 @@ def dump_db(outfile_name, database):
             print(fmt.format(*cols))
         print("=" * total_width)
 
+        json_out = {'dataset': responses}
         json.dump(json_out, outfile, indent=2)
 
     print_samples_db()
