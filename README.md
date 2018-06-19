@@ -27,3 +27,16 @@ You can now run the webapp with
 
     flask run
 
+
+### NOTE:
+
+You shoud also consider adding these lines to the end of your `.bashrc`, and no don't change the username.
+
+    source /home/pdmitrano/Projects/grouping/venv/bin/activate
+    export FLASK_APP=/home/pdmitrano/Projects/grouping/interface/interface/interface.py
+
+# Dumping the database of responses
+
+ - SSH onto the server
+ - `flask dumpdb --outfile my_outfile.json`
+
