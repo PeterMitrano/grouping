@@ -419,15 +419,18 @@ def responses():
     return resp
 
 
+@app.route('/id', methods=['GET'])
+def id():
+    labeler_id = request.cookies.get(LABELER_ID_COOKIE_KEY, NO_LABELER_ID)
+    if labeler_id != NO_LABELER_ID:
+        return render_template('id.html', labeler_id=labeler_id)
+    else:
+        return render_template('error.html', reason="You have no Labeler ID. Please report this.")
+
+
 @app.route('/survey', methods=['GET'])
 def survey():
-    samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignment_id = request.args.get('assignmentId', NOT_MTURK)
-    experiment_id = request.args.get('experimentId', EXPERIMENT_ID_NOT_AVAILABLE)
-    href = "interface?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
-                                                                                             samples_per_participant,
-                                                                                             assignment_id)
-    return render_template('survey.html', experimentId=experiment_id, next_href=href)
+    return redirect('https://goo.gl/forms/CenUVxFWTOlDKrn23')
 
 
 @app.route('/welcome', methods=['GET'])
@@ -450,7 +453,9 @@ def welcome():
         assignment_id)
     template = render_template('welcome.html', next_href=href, assignment_id=assignment_id)
     resp = make_response(template)
-    resp.set_cookie(LABELER_ID_COOKIE_KEY, labeler_id)
+
+    max_age_seconds = 365 * 24 * 60 * 60  # 1 year
+    resp.set_cookie(LABELER_ID_COOKIE_KEY, labeler_id, max_age=max_age_seconds)
     return resp
 
 
