@@ -299,12 +299,12 @@ def remove_experiment(experiment_id, database):
                     print(Fore.YELLOW, end='')
                     print("Failed to remove", experiment_id, ". Try again, this might be a race condition.")
                     print(Fore.RESET, end='')
+
+        db.commit()
     except sqlite3.IntegrityError as e:
         print(Fore.RED, end='')
         print(e)
         print(Fore.RESET, end='')
-
-    db.commit()
 
 
 def remove_from_sample_db(sample, force=False):
