@@ -52,7 +52,8 @@ let final_instruction = 'First, press play to hear the clip. \
                          and placed one marker. \
                          You should spend 30 seconds to one minute on each clip. \
                          When you are finished, the \'Submit\' button will appear. \
-                         Click the \'Submit\' button to end the experiment.';
+                         Click the \'Submit\' button to end the experiment. \
+                         Your Labeler ID is shown at the bottom of the page.';
 let instruction_idx = 0;
 
 /////////////////////////////////////////////////////////
@@ -79,6 +80,11 @@ window.onload = function() {
   $('#instruction').html(instructions[0]);
   $('#pause_play_button').prop('disabled', true);
   iface_enabled = false;
+
+  // welcome and show labeler ID
+  let snackbar = document.getElementById("snackbar");
+  snackbar.className = "show";
+  setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 3000);
 };
 
 function get_cookie(key) {

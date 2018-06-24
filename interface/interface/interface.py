@@ -606,7 +606,7 @@ def interface():
     samples = [{'url': url} for url in unlabeled_sample_urls]
     response = make_response(
         render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href,
-                        assignment_id=assignment_id))
+                        assignment_id=assignment_id, labeler_id=labeler_id))
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
