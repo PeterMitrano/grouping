@@ -69,9 +69,10 @@ def load_command(directory, database):
 
 @app.cli.command('initdb')
 @click.option('--database', help='database file to use, a *.db file', default=None)
-def initdb_command(database):
+@click.option('--force/--no-force', help='force initdb, even if on mprlab server', default=False)
+def initdb_command(database, force):
     """Initializes the database."""
-    success = init_db(database)
+    success = init_db(database, force)
 
     if success:
         dump_db(False, database)
@@ -99,16 +100,17 @@ def get_db(alternate_db_path=None):
     return g.sqlite_db
 
 
-def init_db(alternate_db_path):
+def init_db(alternate_db_path, force):
     db = get_db(alternate_db_path)
 
-    y = input("Are you sure you want to DELETE ALL DATA and re-initialize the database? [y/n]")
-    if y != 'y' and y != 'Y':
-        print("Aborting.")
-        return False
+    if not force:
+        y = input("Are you sure you want to DELETE ALL DATA and re-initialize the database? [y/n]")
+        if y != 'y' and y != 'Y':
+            print("Aborting.")
+            return False
 
     hostname = socket.gethostname()
-    if hostname == "mprlab":
+    if hostname == "mprlab" and not force:
         print(Fore.RED, "hostname is mprlab. You definitely don't want to do this. Aborting.", Fore.RESET)
         return False
 
