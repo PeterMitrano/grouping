@@ -454,7 +454,10 @@ def welcome():
     template = render_template('welcome.html', next_href=href, assignment_id=assignment_id)
     resp = make_response(template)
 
-    max_age_seconds = 365 * 24 * 60 * 60  # 1 year
+    if app.debug:
+        max_age_seconds = None  # when debugging, delete cookie when browser exits
+    else:
+        max_age_seconds = 365 * 24 * 60 * 60  # 1 year
     resp.set_cookie(LABELER_ID_COOKIE_KEY, labeler_id, max_age=max_age_seconds)
     return resp
 
