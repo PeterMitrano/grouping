@@ -81,6 +81,22 @@ window.onload = function() {
   iface_enabled = false;
 };
 
+function get_cookie(key) {
+  let val = key + "=";
+  let decodedCookie = decodeURIComponent(document.cookie);
+  let ca = decodedCookie.split(';');
+  for(let i = 0; i <ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+      }
+      if (c.indexOf(val) == 0) {
+          return c.substring(val.length, c.length);
+      }
+  }
+  return "";
+}
+
 function prev_instruction() {
   if (instruction_idx > 0) {
     instruction_idx -= 1;
@@ -144,7 +160,6 @@ function squelch(e) {
 function pause_play(e) {
   if (iface_enabled) {
     if (audio.paused) {
-      console.log("play starting.");
       let promise = audio.play();
       if (promise !== undefined) {
         promise.catch(function () {
@@ -153,7 +168,6 @@ function pause_play(e) {
       }
     }
     else {
-      console.log("attempting pause...");
       audio.pause();
     }
   }
@@ -255,7 +269,9 @@ function next_submit() {
 
   // HTTP POST to server
   let request = new XMLHttpRequest();
-  let metadata = {'assignment_id': assignment_id};
+  let metadata = {
+    'assignment_id': assignment_id
+  };
   let post_data = {
     'metadata': metadata,
     'experiment_id': experiment_id,
@@ -278,7 +294,6 @@ function next_submit() {
     // load the next sample
     sample_idx += 1;
     audio_src.src = samples[sample_idx]['url'];
-    console.log("loading.");
     audio.load();
 
     // create response object for new trial

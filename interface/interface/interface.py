@@ -1,14 +1,14 @@
 import json
 import os
-
-import numpy as np
 import shutil
-import sqlite3
 import socket
+import sqlite3
+import uuid
 from collections import OrderedDict
 from datetime import datetime
 
 import click
+import numpy as np
 import requests
 from colorama import init, Fore, Style
 from flask import Flask, render_template, g, request, Response, url_for, redirect, make_response
@@ -23,11 +23,15 @@ app.config.update(dict(
     PASSWORD='password'
 ))
 
-DEFAULT_SAMPLES_PER_PARTICIPANT = 15
+DEFAULT_SAMPLES_PER_PARTICIPANT = 500
 SAMPLES_URL_PREFIX = 'https://mprlab.wpi.edu/'
 SAMPLES_ROOT = '/var/www/html/grouping'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))  # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
+NO_LABELER_ID = "NO_LABELER_ID"
+NOT_MTURK = "NO_MTURK"
+EXPERIMENT_ID_NOT_AVAILABLE = "EXPERIMENT_ID_NOT_AVAILABLE"
+LABELER_ID_COOKIE_KEY = 'labeler_id'
 
 
 @app.cli.command('dumpdb')
@@ -54,26 +58,29 @@ def remove_command(sample_name, force):
 
 @app.cli.command('load')
 @click.argument('directory')
-def load_command(directory):
+@click.option('--database', help='database file to use, a *.db file', default=None)
+def load_command(directory, database):
     """ insert ALL the files from the given folder """
     success = load(directory)
 
     if success:
-        dump_db(False)
+        dump_db(False, database)
 
 
 @app.cli.command('initdb')
-def initdb_command():
+@click.option('--database', help='database file to use, a *.db file', default=None)
+def initdb_command(database):
     """Initializes the database."""
-    success = init_db()
+    success = init_db(database)
 
     if success:
-        dump_db(False)
+        dump_db(False, database)
 
 
 def connect_db(alternate_db_path=None):
     """Connects to the specific database."""
     if alternate_db_path is None:
+        print("Using default database path:", app.config['DATABASE'])
         rv = sqlite3.connect(app.config['DATABASE'], detect_types=sqlite3.PARSE_DECLTYPES)
     else:
         rv = sqlite3.connect(alternate_db_path, detect_types=sqlite3.PARSE_DECLTYPES)
@@ -92,8 +99,8 @@ def get_db(alternate_db_path=None):
     return g.sqlite_db
 
 
-def init_db():
-    db = get_db()
+def init_db(alternate_db_path):
+    db = get_db(alternate_db_path)
 
     y = input("Are you sure you want to DELETE ALL DATA and re-initialize the database? [y/n]")
     if y != 'y' and y != 'Y':
@@ -200,17 +207,16 @@ def dump_db(outfile_name, database):
 
     def print_response_db():
         responses_cur = db.execute(
-            'SELECT id, url, stamp, experiment_id, metadata, data FROM responses ORDER BY stamp DESC')
+            'SELECT id, url, stamp, labeler_id, experiment_id, metadata, data FROM responses ORDER BY stamp DESC')
         entries = responses_cur.fetchall()
 
-        responses = []
+        json_responses = []
 
         headers = OrderedDict()
         headers['id'] = 3
-        headers['url'] = 20
-        headers['stamp'] = 27
-        headers['experiment_id'] = 34
-        headers['metadata'] = 20
+        headers['url'] = 25
+        headers['stamp'] = 19
+        headers['labeler_id'] = 36
         term_size = shutil.get_terminal_size((120, 20))
         total_width = term_size.columns
         headers['data'] = max(total_width - sum(headers.values()) - len(headers), 0)
@@ -222,17 +228,18 @@ def dump_db(outfile_name, database):
         print("=" * total_width)
         print(header)
         for entry in entries:
-            response = json.loads(entry[5])
-            responses.append({
+            response = json.loads(entry[6])
+            json_responses.append({
                 'id': entry[0],
                 'url': entry[1],
                 'stamp': str(entry[2]),
-                'experiment_id': entry[3],
-                'metadata': json.loads(entry[4]),
+                'labeler_id': entry[3],
                 'data': response,
             })
             cols = [str(col) for col in entry]
-            cols[1] = cols[1][len(SAMPLES_URL_PREFIX):]
+            cols[1] = cols[1].strip(SAMPLES_URL_PREFIX)
+            cols.pop(4)
+            cols.pop(4)
             data = "["
             for d in response['final_response']:
                 s = "%0.2f, " % d['timestamp']
@@ -240,16 +247,16 @@ def dump_db(outfile_name, database):
                     data += "..., "
                     break
                 data += s
-            if len(data) == 1:
-                cols[5] = data + "]"
+            if len(data) == 0:
+                cols[4] = data + "]"
             else:
-                cols[5] = data[:-2] + "]"
-            if len(cols[5]) > headers['data']:
-                cols[5] = cols[5][0:headers['data'] - 3] + '...'
+                cols[4] = data[:-2] + "]"
+            if len(cols[4]) > headers['data']:
+                cols[4] = cols[4][0:headers['data'] - 3] + '...'
             print(fmt.format(*cols))
         print("=" * total_width)
 
-        json_out = {'dataset': responses}
+        json_out = {'dataset': json_responses}
         json.dump(json_out, outfile, indent=2)
 
     print_samples_db()
@@ -364,6 +371,11 @@ def close_db(error):
 @app.route('/responses', methods=['POST'])
 def responses():
     db = get_db()
+    labeler_id = request.cookies.get(LABELER_ID_COOKIE_KEY, NO_LABELER_ID)
+
+    if labeler_id == NO_LABELER_ID:
+        return Response("No labeler id cookie", status=400, mimetype='application/json')
+
     req_data = request.get_json()
     sample = req_data['sample']
     ip_addr = request.remote_addr
@@ -376,11 +388,23 @@ def responses():
     # sort the final response by timestamps for sanity
     sorted_final_response = sorted(sample_response['final_response'], key=lambda d: d['timestamp'])
     sample_response['final_response'] = sorted_final_response
-    db.execute(
-        'INSERT INTO responses (url, ip_addr, stamp, experiment_id, metadata, data) VALUES (?, ?, ?, ?, ?, ?)',
-        [url, ip_addr, stamp, experiment_id, json.dumps(metadata), json.dumps(sample_response)])
 
+    # Insert the full response details
+    db.execute(
+        'INSERT INTO responses'
+        '(url, ip_addr, stamp, labeler_id, experiment_id, metadata, data)'
+        'VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [url, ip_addr, stamp, labeler_id, experiment_id, json.dumps(metadata), json.dumps(sample_response)])
+
+    # increment the sample count information
     db.execute('UPDATE samples SET count = count + 1 WHERE url= ?', [sample['url']])
+
+    # add the labeler if not already present
+    try:
+        db.execute('INSERT INTO labelers (labeler_id) VALUES (?) ', [labeler_id])
+    except sqlite3.IntegrityError:
+        # skip this because the sample already exists!
+        pass
 
     db.commit()
 
@@ -396,8 +420,8 @@ def responses():
 @app.route('/survey', methods=['GET'])
 def survey():
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
-    experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
+    assignment_id = request.args.get('assignmentId', NOT_MTURK)
+    experiment_id = request.args.get('experimentId', EXPERIMENT_ID_NOT_AVAILABLE)
     href = "interface?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
                                                                                              samples_per_participant,
                                                                                              assignment_id)
@@ -407,27 +431,37 @@ def survey():
 @app.route('/welcome', methods=['GET'])
 def welcome():
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
+    assignment_id = request.args.get('assignmentId', NOT_MTURK)
 
-    # lol this is such good code...
-    random_numbers = [np.random.randint(0, 255) for _ in range(9)]
-    experiment_id = "{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}::{:02x}".format(*random_numbers)
-    href = "survey?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(experiment_id,
-                                                                                          samples_per_participant,
-                                                                                          assignment_id)
-    return render_template('welcome.html', next_href=href, assignment_id=assignment_id)
+    # unique ID for this experiment (set of trials)
+    experiment_id = str(uuid.uuid4())
+
+    # unique ID for this labeler
+    if LABELER_ID_COOKIE_KEY in request.cookies:
+        labeler_id = request.cookies[LABELER_ID_COOKIE_KEY]
+    else:
+        labeler_id = str(uuid.uuid4())
+
+    href = "interface?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(
+        experiment_id,
+        samples_per_participant,
+        assignment_id)
+    template = render_template('welcome.html', next_href=href, assignment_id=assignment_id)
+    resp = make_response(template)
+    resp.set_cookie(LABELER_ID_COOKIE_KEY, labeler_id)
+    return resp
 
 
 @app.route('/thankyou_mturk', methods=['GET'])
 def thank_you_mturk():
-    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
-    experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
+    assignment_id = request.args.get('assignmentId', NOT_MTURK)
+    experiment_id = request.args.get('experimentId', EXPERIMENT_ID_NOT_AVAILABLE)
     return render_template('thankyou_mturk.html', assignment_id=assignment_id, experiment_id=experiment_id)
 
 
 @app.route('/thankyou', methods=['GET'])
 def thank_you():
-    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
+    assignment_id = request.args.get('assignmentId', NOT_MTURK)
     return render_template('thankyou.html', assignmentId=assignment_id)
 
 
@@ -518,40 +552,53 @@ def wpi_participant_pool():
 
 @app.route('/', methods=['GET'])
 def root():
-    assignmentId = request.args.get('assignmentId', "NOT_MTURK")
+    assignmentId = request.args.get('assignmentId', NOT_MTURK)
 
     return redirect(url_for('welcome', assignmentId=assignmentId))
 
 
 @app.route('/interface', methods=['GET'])
 def interface():
-    db = get_db()
-    # cur = db.execute('SELECT url, count FROM samples ORDER BY count DESC')
-    cur = db.execute('SELECT url, count FROM samples')
-    entries = np.array(cur.fetchall())
     samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignment_id = request.args.get('assignmentId', "NOT_MTURK")
-    experiment_id = request.args.get('experimentId', "EXPERIMENT_ID_NOT_AVAILABLE")
+    assignment_id = request.args.get('assignmentId', NOT_MTURK)
+    experiment_id = request.args.get('experimentId', EXPERIMENT_ID_NOT_AVAILABLE)
+    labeler_id = request.cookies.get(LABELER_ID_COOKIE_KEY, NO_LABELER_ID)
 
-    if assignment_id and assignment_id != "NOT_MTURK":
+    if labeler_id == NO_LABELER_ID:
+        return render_template('error.html', reason='No cookie {} was found.'.format(NO_LABELER_ID))
+
+    db = get_db()
+    # get the list of samples that this labeler has already labeled
+    labeled_cur = db.execute('SELECT responses.url FROM responses '
+                             'JOIN samples ON samples.url = responses.url '
+                             'WHERE responses.labeler_id=?', [labeler_id])
+    labeled_sample_urls = [row['url'] for row in labeled_cur.fetchall()]
+    all_cur = db.execute('SELECT url FROM samples')
+    all_sample_urls = [row['url'] for row in all_cur.fetchall()]
+
+    # remove any samples that have already been labeled
+    unlabeled_sample_urls = [s for s in all_sample_urls if s not in labeled_sample_urls]
+
+    # explicitly shuffle them
+    np.random.shuffle(unlabeled_sample_urls)
+
+    if assignment_id and assignment_id != NOT_MTURK:
         href = "thankyou_mturk?assignmentId={:s}&experimentId={:s}".format(assignment_id, experiment_id)
     else:
         href = "thankyou?"
 
-    if samples_per_participant <= 0 or samples_per_participant > 30:
-        return render_template('error.html', reason='Number of samples per participant must be between 1 and 30')
-    elif entries.shape[0] < samples_per_participant:
-        return render_template('error.html', reason='Not samples available for response.')
-    else:
-        # randomly sample according to a power distribution--samples with fewer weights are more likely to be chosen
-        # urls_for_new_experiment = sample_new_urls(entries, samples_per_participant)
-        urls_for_new_experiment = entries[:samples_per_participant]
-        samples = [{'url': e[0]} for e in urls_for_new_experiment]
-        response = make_response(
-            render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href,
-                            assignment_id=assignment_id))
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        return response
+    if len(unlabeled_sample_urls) <= 0:
+        return render_template('thankyou.html')
+
+    if samples_per_participant <= 0:
+        return render_template('error.html', reason='Number of samples per participant must be between greater than 0')
+
+    samples = [{'url': url} for url in unlabeled_sample_urls]
+    response = make_response(
+        render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href,
+                        assignment_id=assignment_id))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 
 if __name__ == '__main__':
