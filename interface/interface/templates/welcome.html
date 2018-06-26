@@ -53,18 +53,9 @@
 
     </p>
     <br>
-    <button id="begin_button" class="btn btn-primary" onclick="location.href='{{next_href}}';">
-      Accept and Continue
-    </button>
   </div>
 </div>
 </body>
 <script>
-  let assignment_id = "{{assignment_id|safe}}";
-  if (assignment_id === "ASSIGNMENT_ID_NOT_AVAILABLE") {
-    $("#begin_button").prop('disabled', true);
-  }
-
-
 </script>
 </html>

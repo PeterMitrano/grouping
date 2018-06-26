@@ -435,31 +435,7 @@ def survey():
 
 @app.route('/welcome', methods=['GET'])
 def welcome():
-    samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignment_id = request.args.get('assignmentId', NOT_MTURK)
-
-    # unique ID for this experiment (set of trials)
-    experiment_id = str(uuid.uuid4())
-
-    # unique ID for this labeler
-    if LABELER_ID_COOKIE_KEY in request.cookies:
-        labeler_id = request.cookies[LABELER_ID_COOKIE_KEY]
-    else:
-        labeler_id = str(uuid.uuid4())
-
-    href = "interface?experimentId={:s}&samplesPerParticipant={:d}&assignmentId={:s}".format(
-        experiment_id,
-        samples_per_participant,
-        assignment_id)
-    template = render_template('welcome.html', next_href=href, assignment_id=assignment_id)
-    resp = make_response(template)
-
-    if app.debug:
-        max_age_seconds = None  # when debugging, delete cookie when browser exits
-    else:
-        max_age_seconds = 365 * 24 * 60 * 60  # 1 year
-    resp.set_cookie(LABELER_ID_COOKIE_KEY, labeler_id, max_age=max_age_seconds)
-    return resp
+    return render_template('welcome.html')
 
 
 @app.route('/thankyou_mturk', methods=['GET'])
@@ -471,8 +447,7 @@ def thank_you_mturk():
 
 @app.route('/thankyou', methods=['GET'])
 def thank_you():
-    assignment_id = request.args.get('assignmentId', NOT_MTURK)
-    return render_template('thankyou.html', assignmentId=assignment_id)
+    return render_template('thankyou.html')
 
 
 @app.route('/manage', methods=['POST'])
@@ -562,20 +537,16 @@ def wpi_participant_pool():
 
 @app.route('/', methods=['GET'])
 def root():
-    assignmentId = request.args.get('assignmentId', NOT_MTURK)
-
-    return redirect(url_for('welcome', assignmentId=assignmentId))
+    return redirect(url_for('interface'))
 
 
 @app.route('/interface', methods=['GET'])
 def interface():
-    samples_per_participant = int(request.args.get('samplesPerParticipant', DEFAULT_SAMPLES_PER_PARTICIPANT))
-    assignment_id = request.args.get('assignmentId', NOT_MTURK)
-    experiment_id = request.args.get('experimentId', EXPERIMENT_ID_NOT_AVAILABLE)
-    labeler_id = request.cookies.get(LABELER_ID_COOKIE_KEY, NO_LABELER_ID)
-
-    if labeler_id == NO_LABELER_ID:
-        return render_template('error.html', reason='No cookie {} was found.'.format(NO_LABELER_ID))
+    # unique ID for this labeler
+    if LABELER_ID_COOKIE_KEY in request.cookies:
+        labeler_id = request.cookies[LABELER_ID_COOKIE_KEY]
+    else:
+        labeler_id = str(uuid.uuid4())
 
     db = get_db()
     # get the list of samples that this labeler has already labeled
@@ -589,26 +560,30 @@ def interface():
     # remove any samples that have already been labeled
     unlabeled_sample_urls = [s for s in all_sample_urls if s not in labeled_sample_urls]
 
-    # explicitly shuffle them
-    np.random.shuffle(unlabeled_sample_urls)
-
-    if assignment_id and assignment_id != NOT_MTURK:
-        href = "thankyou_mturk?assignmentId={:s}&experimentId={:s}".format(assignment_id, experiment_id)
-    else:
-        href = "thankyou?"
-
     if len(unlabeled_sample_urls) <= 0:
         return render_template('thankyou.html')
 
-    if samples_per_participant <= 0:
-        return render_template('error.html', reason='Number of samples per participant must be between greater than 0')
+    # explicitly shuffle them
+    np.random.shuffle(unlabeled_sample_urls)
+
+    # Generate new UUID for this experiment. An experiment is one session by one labeler done without refreshing.
+    experiment_id = str(uuid.uuid4())
 
     samples = [{'url': url} for url in unlabeled_sample_urls]
-    response = make_response(
-        render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id, next_href=href,
-                        assignment_id=assignment_id, labeler_id=labeler_id))
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    return response
+
+    href = "thankyou?"
+    template = render_template('interface.html', samples=json.dumps(samples), experiment_id=experiment_id,
+                               next_href=href, labeler_id=labeler_id)
+    resp = make_response(template)
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+
+    if app.debug:
+        max_age_seconds = None  # when debugging, delete cookie when browser exits
+    else:
+        max_age_seconds = 365 * 24 * 60 * 60  # 1 year
+
+    resp.set_cookie(LABELER_ID_COOKIE_KEY, labeler_id, max_age=max_age_seconds)
+    return resp
 
 
 if __name__ == '__main__':

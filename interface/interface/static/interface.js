@@ -292,7 +292,6 @@ function next_submit() {
   if (sample_idx === samples.length - 1) {
     $('#next-submit-button').prop('disabled', true);
 
-    // FIXME: redirect to debriefing page
     window.location.href = next_href;
   }
   else {
