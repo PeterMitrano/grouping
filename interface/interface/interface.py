@@ -421,11 +421,22 @@ def responses():
 
 @app.route('/id', methods=['GET'])
 def id():
-    labeler_id = request.cookies.get(LABELER_ID_COOKIE_KEY, NO_LABELER_ID)
-    if labeler_id != NO_LABELER_ID:
-        return render_template('id.html', labeler_id=labeler_id)
+    # unique ID for this labeler
+    if LABELER_ID_COOKIE_KEY in request.cookies:
+        labeler_id = request.cookies[LABELER_ID_COOKIE_KEY]
     else:
-        return render_template('error.html', reason="You have no Labeler ID. Please report this.")
+        labeler_id = str(uuid.uuid4())
+
+    template = render_template('id.html', labeler_id=labeler_id)
+    resp = make_response(template)
+
+    if app.debug:
+        max_age_seconds = None  # when debugging, delete cookie when browser exits
+    else:
+        max_age_seconds = 365 * 24 * 60 * 60  # 1 year
+
+    resp.set_cookie(LABELER_ID_COOKIE_KEY, labeler_id, max_age=max_age_seconds)
+    return resp
 
 
 @app.route('/survey', methods=['GET'])
