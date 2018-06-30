@@ -156,7 +156,7 @@ def load(directory):
         else:
             sample_url = os.path.join(SAMPLES_URL_PREFIX, subdir, sample_name)
             try:
-                db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ', [sample_url, 0])
+                db.execute('INSERT INTO samples (url) VALUES (?, ?) ', [sample_url])
                 print(Fore.BLUE, end='')
                 print("Added", sample_url)
                 print(Fore.RESET, end='')
@@ -183,17 +183,16 @@ def dump_db(outfile_name, database):
         outfile = open(os.devnull, 'w')
 
     def print_samples_db():
-        samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
+        samples_cur = db.execute('SELECT url FROM samples')
         entries = samples_cur.fetchall()
 
         # figure out dimensions
         url_w = "100"
-        count_w = "5"
 
-        header_format = "{:<" + url_w + "." + url_w + "s} {:s}"
-        header = header_format.format("URL", "count")
+        header_format = "{:<" + url_w + "." + url_w + "s}"
+        header = header_format.format("URL")
         w = len(header)
-        row_format = "{:<" + url_w + "." + url_w + "s} {:<" + count_w + "d}"
+        row_format = "{:<" + url_w + "." + url_w + "s}"
 
         print(Fore.GREEN + "Dumping Database" + Style.RESET_ALL)
 
@@ -203,8 +202,7 @@ def dump_db(outfile_name, database):
         for entry in entries:
             url = entry[0]
             url = url[len(SAMPLES_URL_PREFIX):]
-            count = entry[1]
-            print(row_format.format(url, count))
+            print(row_format.format(url))
         print("=" * w)
 
     def print_response_db():
@@ -237,7 +235,7 @@ def dump_db(outfile_name, database):
                 'stamp': str(entry[2]),
                 'labeler_id': entry[3],
                 'experiment_id': entry[4],
-                'metadata': entry[5],
+                'metadata': json.loads(entry[5]),
                 'data': response,
             })
             cols = [str(col) for col in entry]
@@ -315,23 +313,13 @@ def remove_from_sample_db(sample, force=False):
     db = get_db()
     sample_url = SAMPLES_URL_PREFIX + sample
     try:
-        check_count_cur = db.execute('SELECT count FROM samples WHERE url=?', [sample_url])
-        sample_counts = check_count_cur.fetchone()
-        if len(sample_counts) == 0:
-            print(Fore.YELLOW, end='')
-            print("Sample", sample_url, "does not exist.")
-            print(Fore.YELLOW, end='')
-            return
-
-        count = sample_counts[0]
-        if count > 0 and not force:
-            print(Fore.YELLOW, end='')
-            print("Sample", sample_url, "has", count, "responses, so you shouldn't delete it. This requires --force.")
-            print(Fore.YELLOW, end='')
-            return
-
         if not force:
-            remove_cur = db.execute('DELETE FROM samples WHERE url=? AND count=0 ', [sample_url])
+            y = input("Are you sure you want to DELETE ALL DATA and re-initialize the database? [y/n]")
+            if y != 'y' and y != 'Y':
+                remove_cur = db.execute('DELETE FROM samples WHERE url=?', [sample_url])
+            else:
+                print("Aborting.")
+                return
         else:
             remove_cur = db.execute('DELETE FROM samples WHERE url=?', [sample_url])
 
@@ -399,9 +387,6 @@ def responses():
         '(url, ip_addr, stamp, labeler_id, experiment_id, metadata, data)'
         'VALUES (?, ?, ?, ?, ?, ?, ?)',
         [url, ip_addr, stamp, labeler_id, experiment_id, json.dumps(metadata), json.dumps(sample_response)])
-
-    # increment the sample count information
-    db.execute('UPDATE samples SET count = count + 1 WHERE url= ?', [sample['url']])
 
     # add the labeler if not already present
     try:
@@ -478,7 +463,7 @@ def manage_post():
     # Add samples (skip duplicates)
     for sample_url in selected_samples:
         try:
-            db.execute('INSERT INTO samples (url, count) VALUES (?, ?) ', [sample_url, 0])
+            db.execute('INSERT INTO samples (url) VALUES (?, ?) ', [sample_url])
             additions.append(sample_url)
         except sqlite3.IntegrityError:
             # skip this because the sample already exists!
@@ -487,7 +472,7 @@ def manage_post():
     # Remove samples
     for sample_url in unselected_samples:
         try:
-            db.execute('DELETE FROM samples WHERE url= ? AND count= 0 ', [sample_url])
+            db.execute('DELETE FROM samples WHERE url= ?', [sample_url])
             removals.append(sample_url)
         except sqlite3.IntegrityError:
             skipped_removals.append(sample_url)
@@ -529,13 +514,12 @@ def manage_get():
                     samples.append(sample)
 
         db = get_db()
-        samples_cur = db.execute('SELECT url, count FROM samples ORDER BY count ASC')
+        samples_cur = db.execute('SELECT url FROM samples')
         entries = samples_cur.fetchall()
         db_samples = []
         for entry in entries:
             db_samples.append({
                 'url': entry[0],
-                'count': int(entry[1])
             })
 
         return render_template('manage.html', samples=json.dumps(samples), db_samples=db_samples)

@@ -2,7 +2,6 @@
 drop table if exists samples;
 create table samples (
   url text not null primary key,
-  count integer not null
 );
 
 -- Create table for labelers
