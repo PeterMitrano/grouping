@@ -236,6 +236,8 @@ def dump_db(outfile_name, database):
                 'url': entry[1],
                 'stamp': str(entry[2]),
                 'labeler_id': entry[3],
+                'experiment_id': entry[4],
+                'metadata': entry[5],
                 'data': response,
             })
             cols = [str(col) for col in entry]
