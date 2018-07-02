@@ -261,7 +261,6 @@ def dump_db(outfile_name, database):
         json_out = {'dataset': json_responses}
         json.dump(json_out, outfile, indent=2)
 
-    print_samples_db()
     print_response_db()
 
 
