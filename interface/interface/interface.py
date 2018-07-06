@@ -156,7 +156,7 @@ def load(directory):
         else:
             sample_url = os.path.join(SAMPLES_URL_PREFIX, subdir, sample_name)
             try:
-                db.execute('INSERT INTO samples (url) VALUES (?, ?) ', [sample_url])
+                db.execute('INSERT INTO samples (url) VALUES (?) ', [sample_url])
                 print(Fore.BLUE, end='')
                 print("Added", sample_url)
                 print(Fore.RESET, end='')
@@ -462,7 +462,7 @@ def manage_post():
     # Add samples (skip duplicates)
     for sample_url in selected_samples:
         try:
-            db.execute('INSERT INTO samples (url) VALUES (?, ?) ', [sample_url])
+            db.execute('INSERT INTO samples (url) VALUES (?) ', [sample_url])
             additions.append(sample_url)
         except sqlite3.IntegrityError:
             # skip this because the sample already exists!

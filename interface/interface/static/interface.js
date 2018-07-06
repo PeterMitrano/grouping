@@ -38,6 +38,7 @@ let instructions = [
       at least twice and placed one marker. Expect to spend at least 30 seconds on each clip.',
   'When you are finished with all the clips, the \'Submit\' button will appear. \
       Click the \'Submit\' button to end the experiment.',
+  'We use a cookie to identify you when you return to this interface, so do not clear your cookies.'
 ];
 
 let final_instruction = 'First, press play to hear the clip. \
@@ -53,7 +54,7 @@ let final_instruction = 'First, press play to hear the clip. \
                          You should spend 30 seconds to one minute on each clip. \
                          When you are finished, the \'Submit\' button will appear. \
                          Click the \'Submit\' button to end the experiment. \
-                         Your Labeler ID is shown at the bottom of the page.';
+                         We use a cookie to identify you when you return to this interface, so do not clear your cookies.';
 let instruction_idx = 0;
 
 /////////////////////////////////////////////////////////
