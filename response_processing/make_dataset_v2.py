@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import os
 import numpy as np
 import argparse
@@ -9,41 +9,47 @@ from madmom.custom_processors import LabelOutputProcessor
 from madmom.features.tf_beats import TfRhythmicGroupingPreProcessor
 from madmom.processors import _process, IOProcessor
 
-from interface.interface.interface import SAMPLES_URL_PREFIX
 from response_processing import util
 
 
 def main():
     parser = argparse.ArgumentParser("merges a csv of survey responses, and a sqlite3 database of responses.")
     parser.add_argument("dumpfile", help="The output of \"flask dumpdb --outfile=dump.json\"")
-    parser.add_argument('samples_folder', help='a folder with all the samples from the database')
+    parser.add_argument("samples", help="folder with the actual mp3 samples")
     parser.add_argument('outfile', help='output file (EX: train_dataset.npz)')
     parser.add_argument('--fps', action='store', type=float, default=100, help='frames per second [default=100]')
 
     args = parser.parse_args()
 
-    responses_by_url = util.load_by_url(args.dumpfile)
-    final_responses_by_url = util.get_final_responses(responses_by_url)
+    trials = json.load(open(args.dumpfile, "r"))['dataset']
 
     data = []
     labels = []
     sample_names = []
-    for sample_url, final_responses in final_responses_by_url.items():
+    for trial in trials:
+        final_response = [r['timestamp'] for r in trial['data']['final_response']]
+        sample_url = trial['url']
+
         o = urlparse(sample_url)
         sample_name = os.path.split(o.path)[-1]
-        sample_path = os.path.join(args.samples_folder, sample_name)
         preprocessor = TfRhythmicGroupingPreProcessor()
-        if not os.path.exists(sample_path):
-            raise ValueError("Sample path {} does not exist.".format(sample_path))
 
-        infile = open(sample_path, 'rb')
+        infile = os.path.join(args.samples, sample_name)
 
-        label_processor = LabelOutputProcessor(final_responses, args.fps)
+        print(infile)
+
+        label_processor = LabelOutputProcessor(final_response, args.fps)
 
         # create an IOProcessor
         processor = IOProcessor(preprocessor, label_processor)
         sample_data, sample_labels = _process((processor, infile, None, vars(args)))
         data.append(sample_data)
+
+        if sample_data.shape != data[0].shape:
+            print("Shapes do not match, ", data[0].shape, sample_data.shape, "Skipping.")
+            data.pop()
+            continue
+
         labels.append(sample_labels)
         sample_names.append(sample_name)
 

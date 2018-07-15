@@ -1,2 +1,0 @@
-model_checkpoint_path: "rhythmic_grouping_rnn.ckpt"
-all_model_checkpoint_paths: "rhythmic_grouping_rnn.ckpt"

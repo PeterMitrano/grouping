@@ -47,27 +47,27 @@ def model_only(args):
 
 
 def train(args):
-    n_frames = 20
-
     train_set = np.load(args.train_set)
     x = train_set["x"]
     labels = train_set["labels"]
-    sample_names = train_set["sample_names"]
+    n_frames = 500
 
-    bits = []
+    samples_flat = []
     bit_labels = []
     for sample, sample_labels in zip(x, labels):
         # chop up each samples into short segments
         for idx in range(0, len(sample) - n_frames, 1):
-            bit = sample[idx:idx + n_frames]
-            bits.append(bit.flatten())
+            subsample = sample[idx:idx + n_frames]
+            subsample_label = sample_labels[idx + n_frames - 1]
+            subsample_flat = subsample.flatten()
+            samples_flat.append(subsample_flat)
             # the label for each bit is the label for the last frame in the bit
-            bit_labels.append(int(np.ceil(sample_labels[idx + n_frames])))
+            bit_labels.append(int(np.ceil(subsample_label)))
 
     model = svm.SVC(C=args.penalty, kernel=args.kernel, degree=args.degree, verbose=True)
 
-    bits = np.array(bits, dtype=np.int)
-    model.fit(bits, bit_labels)
+    samples_flat = np.array(samples_flat, dtype=np.int)
+    model.fit(samples_flat, bit_labels)
 
     stamp = "{:%B_%d_%H:%M:%S}".format(datetime.now())
     model_name = stamp + "_model.pkl"

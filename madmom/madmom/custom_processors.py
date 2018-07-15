@@ -7,8 +7,8 @@ from madmom.processors import OutputProcessor
 class LabelOutputProcessor(OutputProcessor):
     """ saved arbitrary data instance. """
 
-    def __init__(self, all_responses, fps):
-        self.all_responses = all_responses
+    def __init__(self, response, fps):
+        self.response = response
         self.fps = fps
 
     def process(self, data, output, **kwargs):
@@ -16,38 +16,16 @@ class LabelOutputProcessor(OutputProcessor):
         # Go through each frame in data, associate responses with that frame, and produce labels
         labels = np.zeros(data.shape[0])
         frame_sizes = kwargs.get('frame_sizes', [1024, 2048, 4096])
-        max_frame_size = max(frame_sizes)
-        max_frame_duration_s = max_frame_size / 441000  # standard sample rate of audio
-        for i, frame in enumerate(data):
-            # Each frame contains audio feature for 1024, 2048, and 4096 samples.
-            # the 4096 samples is the widest frame length. It spans 92.88 ms in time (max_frame_duration_s).
-            # we first compute the time interface of this frame
-            count = 0
-            t_center = i * 1 / self.fps
-            t0 = t_center - max_frame_duration_s / 2
-            t1 = t_center + max_frame_duration_s / 2
+        max_frame_size = int((max(frame_sizes) / 44100) * self.fps)
 
-            # iterate over each time this clip was presented
-            for responses in self.all_responses:
-                # iterate over each unique response (time they hit space bar)
-                for response in responses:
-                    # convert from milliseconds to seconds
-                    response = response / 1000
+        for marker_time in self.response:
+            center_frame_idx = int(marker_time * self.fps)
+            window = np.hanning(max_frame_size)
+            start = center_frame_idx - max_frame_size//2
+            stop = center_frame_idx + max_frame_size//2
+            for i in range(start, stop):
+                labels[i] = window[i - start]
 
-                    # modulus by the length of the clip
-                    clip_length = data.shape[0] / float(kwargs.get('fps', 0))
-                    response = response % clip_length
-
-                    # If this response falls within the time range of our frame use it as a label
-                    # Note one response may fall within the range of a few sequential frames
-                    if t0 < response < t1:
-                        window_center_idx = max_frame_size / 2
-                        window_idx = int((response - t0) * max_frame_size / max_frame_duration_s)
-                        w = np.hanning(max_frame_size)[window_idx]
-                        labels[i] = 1 * w
-                        break
-                if labels[i] > 0:
-                    break
         return data, labels
 
 

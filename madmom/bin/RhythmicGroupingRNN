@@ -56,7 +56,7 @@ class BiDirectionalRNN:
         self.global_step = tf.Variable(0, trainable=False, name="global_step")
 
         with tf.name_scope("cross_entropy"):
-            self.loss_raw = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.z1,
+            self.loss_raw = tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.labels, logits=self.z1,
                                                                     name="loss_raw")
             self.loss_per_sample = tf.reduce_sum(self.loss_raw, name="loss_per_sample", axis=1)
             self.loss = tf.reduce_mean(self.loss_per_sample, name="loss")
@@ -112,16 +112,17 @@ def common(args):
 
 
 def model_only(args):
-    time_steps = 200
-    num_samples = 14
+    time_steps = 802
+    num_samples = 82
     m = BiDirectionalRNN(time_steps, num_samples)
     print(m.labels_single.get_shape())
 
 
 def train(args):
-    time_steps = 200
-    num_samples = 10
     summary_frequency = 25
+    time_steps = 802
+    num_samples = 82
+
     m = BiDirectionalRNN(time_steps, num_samples)
 
     sess, x, labels, sample_names, summaries = common(args)
@@ -141,9 +142,9 @@ def train(args):
         for j in range(args.epocs):
             fixed_length_x = x[:num_samples, 0:time_steps, :]
             fixed_length_labels = labels[:num_samples, 0:time_steps]
-            step, s, loss, y_hat, _ = sess.run([m.global_step, summaries, m.loss, m.y_hat, m.train_step],
-                                               feed_dict={m.forwards_x: fixed_length_x,
-                                                          m.labels_single: fixed_length_labels})
+            feed_dict = {m.forwards_x: fixed_length_x, m.labels_single: fixed_length_labels}
+            ops = [m.global_step, summaries, m.loss, m.y_hat, m.train_step]
+            step, s, loss, y_hat, _ = sess.run(ops, feed_dict=feed_dict)
             if j % summary_frequency == 0:
                 if args.log:
                     writer.add_summary(s, step)
@@ -161,10 +162,10 @@ def train(args):
 
 
 def test(args):
-    time_steps = 200
     num_samples = 15
 
     sess, x_test, labels_test, sample_names, summaries = common(args)
+    time_steps = x_test.shape[1]
 
     m = BiDirectionalRNN(time_steps, num_samples)
 
