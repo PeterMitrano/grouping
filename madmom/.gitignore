@@ -45,3 +45,6 @@ outputs
 *.zip
 data
 models
+
+#cluster filter
+slurm*.out

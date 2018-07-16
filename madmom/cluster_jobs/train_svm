@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -t 4:00:00
+#SBATCH --mem 64GB
+#SBATCH -J train_svm
+
+# Stop execution after any error
+set -e
+
+# Useful variables
+MYUSER=$(whoami)
+LOCALDIR=/tmp
+DATADIR=~/data/grouping
+PROJDIR=$PWD
+
+# or another folder where you want your data to be stored
+# Job-related variables
+THISJOB=train_svm
+
+# some way to identify this job execution
+WORKDIR=$LOCALDIR/$MYUSER/$THISJOB
+
+# Create work dir from scratch, enter it
+rm -rf $WORKDIR && mkdir -p $WORKDIR && cd $WORKDIR
+
+# setup the directories and files we expect
+cp -r $PROJDIR/bin .
+cp -r $PROJDIR/madmom .
+cp -r $PROJDIR/data .
+
+# Execute program (this also writes files in work dir)
+source ~/Projects/grouping/venv/bin/activate
+./bin/RhythmicGroupingSVM train data/final_study_dataset/dataset/dataset.npz models
+
+# Transfer generated files into home directory
+cp -r models/* $DATADIR/models
+
+# Cleanup
+rm -r $WORKDIR
+
