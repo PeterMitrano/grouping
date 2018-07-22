@@ -26,6 +26,10 @@ def main():
         sample_name = os.path.split(o.path)[-1]
         outfile = os.path.join(args.outfolder, sample_name)
 
+        if os.path.isfile(outfile):
+            print("skipping", outfile)
+            continue
+
         print(sample_url, '->', outfile)
 
         http = urllib3.PoolManager()

@@ -14,15 +14,16 @@ class LabelOutputProcessor(OutputProcessor):
     def process(self, data, output, **kwargs):
         # pylint: disable=arguments-differ
         # Go through each frame in data, associate responses with that frame, and produce labels
-        labels = np.zeros(data.shape[0])
+        n_frames = data.shape[0]
+        labels = np.zeros(n_frames)
         frame_sizes = kwargs.get('frame_sizes', [1024, 2048, 4096])
         max_frame_size = int((max(frame_sizes) / 44100) * self.fps)
 
         for marker_time in self.response:
             center_frame_idx = int(marker_time * self.fps)
             window = np.hanning(max_frame_size)
-            start = center_frame_idx - max_frame_size//2
-            stop = center_frame_idx + max_frame_size//2
+            start = max(center_frame_idx - max_frame_size//2, 0)
+            stop = min(center_frame_idx + max_frame_size//2, n_frames - 1)
             for i in range(start, stop):
                 labels[i] = window[i - start]
 
