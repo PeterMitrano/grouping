@@ -45,7 +45,7 @@ def main():
         sample_data, sample_labels = _process((processor, infile, None, vars(args)))
         data.append(sample_data)
 
-        if sample_data.shape[1] != data[0].shape[1]:
+        if sample_data.shape != data[0].shape:
             print("Shapes do not match, ", data[0].shape, sample_data.shape, "Skipping.")
             data.pop()
             continue

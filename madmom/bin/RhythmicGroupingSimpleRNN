@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+
+import argparse
+import os
+from datetime import datetime
+
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+
+
+class RNN:
+    def __init__(self):
+        num_features = 314
+        time_steps = 300
+        n_hidden = 512
+        self.x = tf.placeholder(tf.float32, shape=(None, time_steps, num_features), name="x")
+        tf.summary.image("spectrogram", tf.expand_dims(tf.transpose(self.x, (0, 2, 1)), axis=3))
+
+        self.y = tf.placeholder(tf.float32, shape=(None, time_steps), name="labels")
+        tf.summary.histogram("y", self.y)
+
+        self.x_list = tf.unstack(self.x, time_steps, 1)
+
+        self.rnn_cell = tf.contrib.rnn.BasicLSTMCell(n_hidden)
+
+        self.h, self.states = tf.contrib.rnn.static_rnn(self.rnn_cell, self.x_list, dtype=tf.float32)
+
+        self.V = tf.Variable(tf.truncated_normal([n_hidden, 1]), dtype=tf.float32, name="V")
+        self.c = tf.Variable(tf.truncated_normal([1]), dtype=tf.float32, name="c")
+        self.o = tf.reshape(tf.matmul(tf.reshape(self.h, (-1, n_hidden)), self.V), (-1, time_steps)) + self.c
+        self.y_hat = tf.nn.softmax(logits=self.o, name='softmax')
+        tf.summary.histogram("y_hat", self.y_hat)
+
+        with tf.name_scope("train"):
+            self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.o, labels=self.y))
+            self.global_step = tf.Variable(0, trainable=False, name="global_step")
+            self.opt = tf.train.AdamOptimizer(learning_rate=0.001).minimize(self.loss, global_step=self.global_step)
+            trainable_vars = tf.trainable_variables()
+            grads = zip(tf.gradients(self.loss, trainable_vars), trainable_vars)
+            for grad, var in grads:
+                tf.summary.histogram(var.name + "/gradient", grad)
+
+        tf.summary.scalar("loss", self.loss)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+
+    train_subparser = subparsers.add_parser("train")
+    train_subparser.add_argument("dataset", help="dataset (npz file)")
+    train_subparser.add_argument("--log", "-l", action="store_true", help="dataset (npz file)")
+    train_subparser.add_argument("--epocs", "-e", type=int, help="number of epocs to train for", default=100)
+    train_subparser.set_defaults(func=train)
+
+    test_subparser = subparsers.add_parser("test")
+    test_subparser.add_argument("dataset", help="dataset (npz file)")
+    test_subparser.add_argument("checkpoint", help="checkpoint of saved weights (ckpt file)")
+    test_subparser.add_argument("--test-only", "-t", action="store_true", help="just load the existing graph and test")
+    test_subparser.set_defaults(func=test)
+
+    model_only_subparser = subparsers.add_parser("model_only")
+    model_only_subparser.add_argument("--time_steps", type=int, help="number of time steps")
+    model_only_subparser.add_argument("--num_samples", type=int, help="number of audio samples to use (1-15 right now")
+    model_only_subparser.set_defaults(func=model_only)
+
+    args = parser.parse_args()
+
+    if args == argparse.Namespace():
+        parser.print_usage()
+    else:
+        args.func(args)
+
+
+def common(args):
+    dataset = np.load(args.dataset)
+    x = dataset["x"]
+    labels = dataset["labels"]
+    sample_names = dataset["sample_names"]
+
+    summaries = tf.summary.merge_all()
+    sess = tf.Session()
+
+    return sess, x, labels, sample_names, summaries
+
+
+def model_only(args):
+    m = RNN()
+    print(len(m.h), m.h[0].get_shape())
+    print(m.y_hat.get_shape())
+    print(m.y.get_shape())
+
+
+def train(args):
+    summary_frequency = 5
+    num_samples = 82
+    time_steps = 300
+
+    sess, x, labels, sample_names, summaries = common(args)
+
+    m = RNN()
+
+    saver = tf.train.Saver()
+    writer = None
+    log_dir = None
+    if args.log:
+        stamp = "{:%B_%d_%H:%M:%S}".format(datetime.now())
+        log_dir = os.path.join("log_data", stamp)
+        writer = tf.summary.FileWriter(log_dir)
+        writer.add_graph(sess.graph)
+
+    # train
+    init_op = tf.global_variables_initializer()
+    sess.run(init_op)
+
+    np.random.seed(0)
+
+    try:
+        print("Training for {} epocs".format(args.epocs))
+        for j in range(args.epocs):
+            start = np.random.randint(0, x.shape[1] - time_steps)
+            fixed_length_x = x[:num_samples, start:start+time_steps, :]
+            fixed_length_labels = labels[:num_samples, start:start+time_steps]
+            feed_dict = {m.x: fixed_length_x, m.y: fixed_length_labels}
+            ops = [m.global_step, summaries, m.loss, m.y_hat, m.opt]
+            step, s, loss, y_hat, _ = sess.run(ops, feed_dict=feed_dict)
+
+            if j % summary_frequency == 0:
+                if args.log:
+                    writer.add_summary(s, step)
+
+                print(j, loss)
+                # plot(y_hat, fixed_length_labels, sample_names[0], sample_idx=np.random.randint(0, num_samples))
+
+            if args.log:
+                os.environ['TF_LOG_DIR'] = log_dir
+                saver.save(sess, os.path.join(log_dir, "rhythmic_grouping_rnn.ckpt"))
+
+    except KeyboardInterrupt:
+        pass
+
+
+def test(args):
+    num_samples = 15
+    time_steps = 300
+
+    sess, x_test, labels_test, sample_names, summaries = common(args)
+
+    m = RNN()
+
+    saver = tf.train.Saver()
+    saver.restore(sess, args.checkpoint)
+
+    fixed_length_x = x_test[:num_samples, 0:time_steps, :]
+    fixed_length_labels = labels_test[:num_samples, 0:time_steps]
+    y_hat, loss_per_sample = sess.run([m.y_hat, m.loss], feed_dict={m.x: fixed_length_x, m.y: fixed_length_labels})
+
+    for test_idx in range(num_samples):
+        print("Test Loss", loss_per_sample[test_idx])
+        plt.figure()
+        plt.plot(y_hat[test_idx, :, 0, 0], label="y_hat")
+        plt.plot(fixed_length_labels[test_idx], label="labels")
+        plt.ylabel("% likelihood of start of group")
+        plt.xlabel("time")
+        plt.title("Test on sample {} ({})".format(test_idx, sample_names[test_idx]))
+
+    plt.show()
+
+
+def plot(y_hat, fixed_length_labels, sample_name, sample_idx):
+    plt.plot(y_hat[sample_idx], label="y_hat")
+    plt.plot(fixed_length_labels[sample_idx], label="labels")
+    plt.ylabel("% likelihood of start of group")
+    plt.xlabel("time")
+    plt.title("Test on sample " + sample_name)
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()

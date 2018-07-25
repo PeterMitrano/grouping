@@ -8,18 +8,29 @@ import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('activations', help='zip file containing activations and fps')
-    parser.add_argument('-s', '--start', default=0, type=int, help='start index into array')
-    parser.add_argument('-e', '--end', default=-1, type=int, help='end index into array')
+    parser.add_argument('dataset', help='npz dataset file')
+    parser.add_argument('--num-examples', '-n', type=int, default=5)
 
     args = parser.parse_args()
 
-    npz = np.load('activations.npz')
-    activations = npz['activations.npy']
+    dataset = np.load(args.dataset)
+    xs = dataset["x"]
+    labels = dataset["labels"]
+    sample_names = dataset["sample_names"]
 
-    plt.plot(activations[args.start:args.end])
+    for x, label, name in list(zip(xs, labels, sample_names))[:args.num_examples]:
+        fig, ax1 = plt.subplots()
+        ax1.imshow(x.T)
+        ax1.set_ylabel('spectral features')
+
+        ax2 = ax1.twinx()
+        ax2.plot(label, 'r', alpha=0.3)
+        ax2.set_xlabel('time (samples)')
+        ax2.set_ylabel('label')
+
+        fig.tight_layout()
+
     plt.show()
-    npz.close()
 
 
 if __name__ == '__main__':

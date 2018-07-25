@@ -6,3 +6,4 @@
 *.mp3
 __pycache__
 venv
+madmom/log_data
