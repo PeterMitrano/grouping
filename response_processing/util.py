@@ -2,6 +2,20 @@ import json
 import numpy as np
 
 
+def load_by_labeler(json_filename):
+    trials = json.load(open(json_filename, "r"))['dataset']
+
+    # group by labeler into a dict
+    responses_by_labeler = {}
+    for trial in trials:
+        labeler_id = trial["labeler_id"]
+        if labeler_id not in responses_by_labeler:
+            responses_by_labeler[labeler_id] = []
+        responses_by_labeler[labeler_id].append(trial)
+
+    return responses_by_labeler
+
+
 def load_by_experiment(json_filename):
     trials = json.load(open(json_filename, "r"))['dataset']
 
